@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style id="background">
+    body {
+      background-image: url('/static/css/model_blurred.png');
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: 100% 100%;
+    }
+</style> 
+
+<div class="overlay"></div>
+<div id="notification-bar"></div>
+<!-- <input type="file" id="objFile">
+<button id="upload-button"><img src="/static/css/upload_logo.png" alt="Upload" /></button> -->
+
+<div class="uploadContainer">
+    <div class="card">
+      <div class="drop_box">
+        <header>
+          <h4>Please upload the 3D Human Character</h4>
+        </header>
+        <p>Files Supported: GLB Human Models only.</p>
+        <input type="file" accept=".glb" id="objFile" style="display:none;">
+        <button class="btn"><img src="/static/css/upload_logo.png" alt="Upload" /></button>
+      </div>
+  
+    </div>
+</div>
+  
+<script type="importmap">
+    {
+        "imports": {
+            "three": "/static/build/three.module.js"
+        }
+    }
+</script>
+<script type="module">
+    import * as THREE from 'three';
+    import { JointHelper } from '/static/JointHelper.js';
+    import { GLTFLoaderHelper} from '/static/ModelLoader.js';
+    import { GUI } from '/static/jsm/libs/lil-gui.module.min.js';
+    import { OrbitControls } from '/static/jsm/controls/OrbitControls.js';
+    import { TransformControls } from '/static/jsm/controls/TransformControls.js';
+    import { GLTFLoader } from '/static/jsm/loaders/GLTFLoader.js';
+    import { FBXLoader } from '/static/jsm/loaders/FBXLoader.js';
+    import * as SkeletonUtils from '/static/jsm/utils/SkeletonUtils.js';
+    import { CameraController } from "./static/CameraFunction.js";
+
+    const materials = {};
+    let camera
+    let renderer
+    let controls
+    let scene = new THREE.Scene();
+    const gltfLoaderHelper = new GLTFLoaderHelper();
+    const raycaster = new THREE.Raycaster();
+    let quaternion = new THREE.Quaternion();
+    let clock = new THREE.Clock();
+    let id;
+
+    // const uploadButton = document.getElementById("upload-button");
+    // uploadButton.addEventListener("click", function() {
+        
+    //     uploadFile();
+    // });
+    uploadUI();
+    function validateGLB(file) {
+        let check=false;
+        // Check the file extension
+        if (!/\.(glb)$/i.test(file.name)) { 
+            check =false;
+        }
+        else{
+            check=true;
+        }
+        return check;
+    }
+
+    function uploadFile(file) {
+        // var fileInput = document.getElementById("objFile");
+        // var file = fileInput.files[0];
+        var request = new XMLHttpRequest();
+        if(!validateGLB(file)) {
+            alert("Only GLB files are allowed.");
+        }
+        else {
+            request.open("PUT", "/upload?filename=" + file.name);
+            request.send(file);
+            request.onreadystatechange = function() {
+                // @TODO: Validate file
+                console.log("Ready State: " + this.readyState + " Status: "+ this.status)
+                if (this.readyState == 4 ) {
+                    switch (this.status){
+                        case 200:
+                            showNotification("File uploaded successfully", true)
+                            clearOverlay();
+                            displayFile(file.name);
+                            break;
+                        
+                        default:
+                            showNotification("Unexpected. Error Status: " + this, false);
+                    }
+                }
+            };
+        }
+    }
+
+    function render() {
+        renderer.render(scene, camera);
+    }
+
+    function init(filename) {
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        const canvasWidth = window.innerWidth;
+        const canvasHeight = window.innerHeight;
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(canvasWidth, canvasHeight);
+
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.body.appendChild(renderer.domElement);
+        
+        camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        
+        camera.position.set(0, 0, 5);
+        const cameraController = new CameraController(camera, window,renderer.domElement,renderer, scene);
+        
+        scene = new THREE.Scene();
+        scene.background = null;
+        window.addEventListener('resize', onWindowResize);
+
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
+        hemiLight.position.set(0, 1, 0);
+        scene.add(hemiLight);
+        
+        const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0x111111, depthWrite: true }));
+        mesh.rotation.x = - Math.PI / 2;
+        mesh.position.y-=1.2;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+
+        const helper = new THREE.GridHelper(100, 100);
+        helper.material.opacity = 0.5;
+        helper.position.y-=1.2;
+        helper.material.transparent = true;
+        scene.add(helper);
+        materials['wireframe'] = new THREE.MeshBasicMaterial({ wireframe: true });
+
+        //@TODO: json pose not hardcoded
+        let json_pose = "/SSC/amy@ai3d.com/archery/19-08-2022_09-44-30_amy/processed/processed_pose_00023".split("/");
+        filename= '/static/user_data/'+ filename;
+        console.log(filename);
+        gltfLoaderHelper.loadGLTFModelWithSkeleton(filename, scene, camera,json_pose);  
+    }
+
+    function animate() {
+        id = requestAnimationFrame(animate);
+        render();
+    }
+
+    function displayFile(filename){
+        init(filename);
+        animate();
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        render();
+    }
+
+    function clearOverlay() {
+        var overlayElements = document.getElementsByClassName("uploadContainer");
+        var background = document.getElementById("background");
+        for (var i=0; i<overlayElements.length;i++){
+            overlayElements[i].style.display='none';
+        }
+        background.style.width = null;
+        background.style.height = null; //remove upload button after successful upload
+    }
+
+    function uploadUI() {
+        const dropArea = document.querySelector(".drop_box"),
+        button = dropArea.querySelector("button"),
+        dragText = dropArea.querySelector("header"),
+        input = dropArea.querySelector("input");
+        let file;
+        var filename;
+
+        button.onclick = () => {
+            input.click();
+        };
+
+        input.addEventListener("change", function (e) {
+            var fileName = e.target.files[0].name;
+            var file = e.target.files[0];
+            let filedata = `
+                <div class="form">
+                    <h5>${fileName}</h5>
+                    <button id="upload-button" class="btn2">Upload</button>
+                </div>`;
+            dropArea.innerHTML = filedata;
+            const uploadButton = document.getElementById("upload-button");
+            uploadButton.addEventListener("click", function() {
+                uploadFile(file);
+            });
+            const card = document.querySelector('.card');
+            card.style.height = "175px";
+            card.style.width = "400px";
+        });
+    }
+
+    function showNotification(message, success) {
+        var notificationBar = document.getElementById("notification-bar");
+        notificationBar.innerHTML = message;
+        notificationBar.classList.remove("hide");
+        notificationBar.classList.add("show");
+        setTimeout(function() {
+            notificationBar.classList.remove("show");
+            var i = 0;
+            for(i = 100; i >= 0; i--){
+                notificationBar.style.opacity = i;
+            }
+            notificationBar.classList.add("hide");
+        }, 3000);
+    }
+</script>
+{% endblock %}

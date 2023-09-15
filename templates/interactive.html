@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style id="background">
+    body {
+      background-image: url('/static/css/model_blurred.png');
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: 100% 100%;
+      overflow: hidden; /* This prevents scrolling */
+    }
+    #button-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 10vh; /* 1/10 of the viewport height */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center; /* Center vertically */
+        background-color: rgba(0, 0, 0, 0);
+        z-index: 100;
+    }
+
+    #button-container {
+        display: flex;
+        gap: 20px;
+    }
+    .circle-button-wrapper {
+        position: relative;
+        align-items: center; /* Center horizontally */
+        display: inline-block;
+    }
+
+    .circle-button {
+        width: 50px;
+        height: 50px;
+        border-radius: 100%;
+        background-color: #3498db;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+    }
+
+    .spinner {
+        width: 60px; /* Adjust width to match your image size */
+        height: 60px; /* Adjust height to match your image size */
+        background-image: url('static/resources/Icons/1437113.png'); /* Replace with your image path */
+        background-size: cover; /* Adjust background size as needed */
+        background-repeat: no-repeat;
+        animation: spin 4s linear infinite;
+        box-sizing: border-box;
+        position: absolute;
+        /* transform: translate(-10%, -10%); */
+        z-index: 1; /* Place spinner behind circle button */
+        left: calc(50% - 30px); /* Adjust left to position the spinner */
+        top: calc(50% - 30px); /* Adjust left to position the spinner */
+        opacity : 0
+    }
+
+    .circle-button:hover {
+        background-color: #2c3e50; /* Change to a darker color on hover */
+    }
+    .circle-button.selected {
+        background-color: rgb(241, 241, 165); /* Change color to yellow for selected button */
+        color: rgb(7, 7, 7);
+    }
+
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+</style> 
+
+<div class="overlay">
+    <div id="button-overlay">
+        <div id="button-container">
+            
+        </div>
+    </div>
+</div>
+<div id="notification-bar"></div>
+  
+<script type="importmap">
+    {
+        "imports": {
+            "three": "/static/build/three.module.js"
+        }
+    }
+</script>
+<script type="module">
+    import * as THREE from 'three';
+
+    import Stats from '/static/jsm/libs/stats.module.js';
+    import { MTLLoader } from '/static/jsm/loaders/MTLLoader.js'
+    import { OrbitControls } from '/static/jsm/controls/OrbitControls.js';
+    import { FBXLoader } from '/static/jsm/loaders/FBXLoader.js';
+    import { OBJLoader } from '/static/jsm/loaders/OBJLoader.js'
+    import * as  SkeletonUtils from '/static/jsm/utils/SkeletonUtils.js'
+    let camera, scene, renderer, stats;
+
+    const clock = new THREE.Clock();
+    const animationList = [];
+    const ModelList = [];
+    let currentAnimIndex=0;
+    let currentModelIndex=0
+    let mixer
+    init();
+    animate();
+ 
+    async function init() {
+
+        const container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+        camera.position.set( 100, 200, 300 );
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0xffffff );
+        // scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+        const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444, 4 );
+        hemiLight.position.set( 0, 200, 0 );
+        scene.add( hemiLight );
+        const dirLight = new THREE.DirectionalLight( 0xffffff, 1.5 );
+        dirLight.position.set( 0, 200, 100 );
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 180;
+        dirLight.shadow.camera.bottom = - 100;
+        dirLight.shadow.camera.left = - 120;
+        dirLight.shadow.camera.right = 120;
+        // scene.add( dirLight );
+
+        // scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+
+        // ground
+        const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+        mesh.rotation.x = - Math.PI / 2;
+        mesh.receiveShadow = true;
+        // scene.add( mesh );
+
+        const grid = new THREE.GridHelper( 200, 20, 0x000000, 0x000000 );
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add( grid );
+
+        const tex_loader = new THREE.CubeTextureLoader();
+        const texture = tex_loader.load([
+            '/static/resources/posx.jpg',
+            '/static/resources/negx.jpg',
+            '/static/resources/posy.jpg',
+            '/static/resources/negy.jpg',
+            '/static/resources/posz.jpg',
+            '/static/resources/negz.jpg',
+        ]);
+        const loader = new FBXLoader();
+        const anim = new FBXLoader()
+        
+        const ModelTable =[ "andy",
+                            "desmond",
+                            "dh",
+                            "jeff",
+                            "pg"]
+        const AnimTable =["stand-talk","handshake","female-dance"]
+       
+        
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.shadowMap.enabled = true;
+        container.appendChild( renderer.domElement );
+
+        const controls = new OrbitControls( camera, renderer.domElement );
+        controls.target.set( 0, 100, 0 );
+        controls.update();
+
+        window.addEventListener( 'resize', onWindowResize );
+
+        // stats
+        stats = new Stats();
+        container.appendChild( stats.dom );
+        document.addEventListener('keydown', handleKeyDown);
+        try{
+            await Getanimation(AnimTable,anim)
+            await GetModel(ModelTable,loader)
+        }
+        catch (error) {
+            console.error("Error loading animation:", error);
+        }
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+    async function GetModel(ModelTable, loader) {
+        return new Promise((resolve, reject) => {
+            const loadModelPromises = [];
+
+            const loadModel = async (modelPath) => {
+                return new Promise((resolveModel, rejectModel) => {
+                    console.log(modelPath)
+                    loader.load('/static/resources/models/' + modelPath + '/'+modelPath+'.fbx', function (object) {
+                        // object.scale.multiplyScalar(0.001);
+                        object.traverse(function (child) {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+                        const localMixer = new THREE.AnimationMixer(object);
+                        ModelList.push({ model: object,mixer: localMixer, name: modelPath });
+                        
+                        resolveModel();
+                    }, undefined, rejectModel);
+                });
+            };
+
+            for (let i = 0; i < ModelTable.length; i++) {
+                loadModelPromises.push(loadModel(ModelTable[i]));
+                
+            }
+
+            Promise.all(loadModelPromises)
+                .then(() => {
+                    resolve();
+                    for (let i = 0; i < ModelTable.length; i++) {
+                        var Tempname=ModelList[i].name
+                        // Tempname=Tempname.replace('.fbx','.jpeg');
+                        Tempname=Tempname+'.jpeg';
+                        console.log(i,Tempname)
+                        generateButton(Tempname,i);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error loading models:', error);
+                    reject();
+                });
+        });
+    }
+
+    function swapModel(index)
+    {
+        console.log(index, ModelList[index].name)
+        let action = ModelList[currentModelIndex].mixer.clipAction(animationList[currentAnimIndex][1])
+        action.stop();
+        action.reset();
+        removeModelFromScene()
+        currentModelIndex=index
+        let selection=ModelList[index]
+        initializeAnimation(selection.mixer)
+        scene.add(selection.model)
+    }
+
+    function removeModelFromScene() {
+        if (ModelList.length > 0) {
+            const modelToRemove = ModelList[currentModelIndex].model;
+            scene.remove(modelToRemove);
+        }
+    }
+    
+    async function initialspawn(ModelTable, loader) {
+       
+        // initializeAnimation(ModelList[0].mixer)
+        // scene.add(ModelList[0].model);
+    }
+
+    function initializeAnimation(localMixer)
+    {
+        const action = localMixer.clipAction(animationList[currentAnimIndex][1]);
+        action.play();
+        mixer=localMixer
+    }
+
+    function Getanimation(AnimTable,loader)
+    {
+        let i=0
+        while(i<AnimTable.length)
+        // Load the FBX ANIMATION   
+        {
+            loader.load('/static/resources/models/raw_motion/'+AnimTable[i]+".fbx", (fbx) => {
+                let animation = fbx.animations;
+                if (animation && animation.length > 0) {
+                    // Store each animation in the list
+                    animationList.push(animation);
+                    
+                }
+                }, (xhr) => {
+                }, (error) => {
+                    console.error('Error loading FBX model:', error);
+                }
+            );
+            
+            i++
+            
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame( animate );
+        const delta = clock.getDelta();
+        if ( mixer ) mixer.update( delta );
+        renderer.render( scene, camera );
+        stats.update();
+    }
+    function playAnimation(nextAnimation) {
+        let action = mixer.clipAction(animationList[currentAnimIndex][1])
+        currentAnimIndex=nextAnimation
+        action.stop();
+        action.reset();
+        action = mixer.clipAction(animationList[currentAnimIndex][1])
+        action.play();
+    }
+
+    function switchAnimation(nextAnimation) {
+        playAnimation(nextAnimation);
+    }
+    function handleKeyDown(event) {
+        const keyCode = event.keyCode || event.which;
+        const key = event.key;
+
+        // Check for arrow key codes or keys
+        switch (key) {
+            case 'ArrowLeft':
+                switchAnimation((animationList.length+currentAnimIndex-1)%animationList.length)
+                // Handle left arrow key
+                // For example, rotate the camera or perform an action
+                break;
+            case 'ArrowRight':
+                switchAnimation((currentAnimIndex+1)%animationList.length)
+                // Handle right arrow key
+                break;
+            case 'ArrowUp':
+                swapModel((ModelList.length+currentModelIndex-1)%ModelList.length)
+                // Handle up arrow key
+                break;
+            case 'ArrowDown':
+                swapModel((currentModelIndex+1)%ModelList.length)
+                // Handle down arrow key
+                break;
+            default:
+                // Other key, do nothing
+                break;
+        }
+    }
+    function generateButton(imagePath, buttonIndex) {
+        const buttonContainer = document.getElementById('button-container');
+
+        const buttonWrapper = document.createElement('div');
+        buttonWrapper.classList.add('circle-button-wrapper');
+
+        const spinner = document.createElement('div');
+        spinner.classList.add('spinner');
+
+        const imageButton = document.createElement('div');
+        imageButton.classList.add('circle-button');
+
+        imagePath= "static/resources/Icons/"+imagePath;
+        imageButton.style.backgroundImage = `url(${imagePath})`;
+        imageButton.style.backgroundSize = 'contain';
+        imageButton.style.backgroundRepeat = 'no-repeat';
+        imageButton.style.backgroundPosition = 'center';
+
+        imageButton.addEventListener('click', () => {
+            // Hide all spinners
+            const spinners = document.querySelectorAll('.spinner');
+            spinners.forEach(spinner => spinner.style.opacity = 0);
+
+            // Toggle the visibility of the spinner for the clicked button
+            const clickedSpinner = buttonWrapper.querySelector('.spinner');
+            clickedSpinner.style.opacity = 1;
+
+            swapModel(buttonIndex);
+            currentModelIndex = buttonIndex;
+
+            // Clear selected class from other buttons
+            const buttons = document.querySelectorAll('.circle-button');
+            buttons.forEach(button => button.classList.remove('selected'));
+
+            // Add selected class to the clicked button
+            imageButton.classList.add('selected');
+        });
+
+        // Append spinner and image button to the wrapper
+        buttonWrapper.appendChild(spinner);
+        buttonWrapper.appendChild(imageButton);
+
+        // Append the wrapper to the container
+        buttonContainer.appendChild(buttonWrapper);
+    }
+
+// // Switch animations every 5 seconds
+// setInterval(switchAnimation, 5000);
+</script>
+{% endblock %}

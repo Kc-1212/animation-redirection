@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="download-button">
+    <img src="/static/css/download_logo.png" alt="Download" />
+</div>
+
+
+<div id="option-container"></div>
+<div id="info-container"></div>
+<div id="trajectory-container"></div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "/static/build/three.module.js"
+        }
+    }
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script type="module">
+    import * as THREE from 'three';
+    import { JointHelper } from '/static/JointHelper.js';
+    import { Grid } from '/static/Grid.js';
+    import { GLTFLoaderHelper} from '/static/ModelLoader.js';
+    import { GUI } from '/static/jsm/libs/lil-gui.module.min.js';
+    import { CustomRaycaster } from "./static/Raycaster.js";
+    import { GUILoader} from "./static/GUILoader.js"
+    import { CameraController} from "./static/CameraFunction.js"
+    import { VRButton } from '/static/jsm/webxr/VRButton.js'; 
+    import { XRControllerModelFactory } from '/static/jsm/webxr/XRControllerModelFactory.js';
+
+
+    let model
+    let skeleton
+    const materials = {};
+    let effectController;
+    let scene = new THREE.Scene();
+    let shading;
+    let camera
+    let vrCamera
+    let vrgroup 
+    let controllers
+    let renderer
+    let controls
+    
+    const guiLoader = new GUILoader(renderer,camera,scene);
+    const gltfLoaderHelper = new GLTFLoaderHelper();
+
+    const raycaster = new THREE.Raycaster();
+    let quaternion = new THREE.Quaternion();
+  
+    let clock = new THREE.Clock();
+    let id;
+   
+    init();
+    setup();
+    animate();
+
+    const downloadButton = document.getElementById("download-button");
+    downloadButton.addEventListener("click", function() {
+        gltfLoaderHelper.exportTrigger();
+    });
+
+    function init() {
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        const canvasWidth = window.innerWidth;
+        const canvasHeight = window.innerHeight;
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+
+        renderer.xr.enabled = true; // enable WebXR
+        renderer.setSize(canvasWidth, canvasHeight);
+
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.body.appendChild(renderer.domElement);
+        
+        camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        vrCamera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+
+        scene = new THREE.Scene();
+        scene.background = null;
+        camera.position.set(0, 0, 3);
+        vrCamera.position.set(0, -3, 3);
+        const cameraController = new CameraController(camera, window,renderer.domElement,renderer,scene);
+        
+        window.addEventListener('resize', onWindowResize);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
+        hemiLight.position.set(0, 1, 0);
+        scene.add(hemiLight);
+        
+        const grid =new Grid(10, 10,0x888888,false ,scene)
+
+        scene.add(grid.getGrid());
+        let json_pose = "{{frame_path}}".split("/");
+        gltfLoaderHelper.loadGLTFModelWithSkeleton('/static/assets/smpl.glb', scene, camera,json_pose);
+        let raycaster;
+        raycaster = new CustomRaycaster(camera, scene,cameraController, guiLoader,gltfLoaderHelper);
+
+        // Add VRButton
+        const vrButton = VRButton.createButton(renderer);
+        document.body.appendChild(vrButton);
+        //Position VR Camera
+        renderer.xr.addEventListener( 'sessionstart', function ( event ) {
+            vrgroup = new THREE.Group();
+            vrgroup.add(vrCamera);
+            vrgroup.position.set(0, 0, 3);
+            scene.add(vrgroup);
+            this.controllers = buildControllers();
+            // this.controllers.forEach(controller => {
+            //     controller.addEventListener('selectstart', onSelectStart);
+            //     controller.addEventListener('selectend', onSelectEnd);
+            // });
+            renderer.setAnimationLoop(xrRender);
+
+            
+
+        } );
+        renderer.xr.addEventListener( 'sessionend', function ( event ) {
+            renderer.setAnimationLoop(render);
+            camera.position.set(0,0,1);
+        } );
+    }
+
+    function setup(){
+        setupGui();
+        guiLoader.jointSegmentOption(gltfLoaderHelper);
+    }
+
+    //Temporary GUI
+    function setupGui() {
+        effectController = {
+            skeleton: false,
+            toggle: true,
+            body: true,
+            newShading: 'flat'
+        };
+
+        const gui = new GUI();
+        gui.add(effectController, 'skeleton').name('Display skeleton').onChange(showSkeleton);
+        gui.add(effectController, 'body').name('Display body').onChange(showBody);
+    }
+
+    function animate() {
+        renderer.setAnimationLoop(render);
+    }
+
+    function toggleRotation(toggle) {
+        toggle= false;
+        if (toggle === true) {
+            controls.autoRotate = true
+            animate();
+        } else {
+
+            controls.autoRotate = false
+            cancelAnimationFrame(id);
+        }
+    }
+    function render() {
+        renderer.render(scene, camera);
+    }
+
+    function xrRender() {
+        renderer.render(scene, vrCamera);
+        if (controllers) {
+            this.controllers.forEach(controller => {
+                this.handleController(controller);
+            })
+        }
+        if (renderer.xr.isPresenting) {
+            const xrCam = renderer.xr.getCamera(camera);
+            vrCamera.projectionMatrix.copy(camera.projectionMatrix);
+            vrCamera.position.copy(xrCam.position);
+            vrCamera.quaternion.copy(xrCam.quaternion);
+
+            const currentRenderTarget = renderer.getRenderTarget(); //to save target before turning off webxr
+
+            renderer.xr.isPresenting = false; //turn off webxr
+
+            // render to the canvas
+            renderer.setRenderTarget(null);
+            renderer.render(scene, vrCamera);
+
+            // restart WebXR
+            renderer.setRenderTarget(currentRenderTarget);
+            renderer.xr.isPresenting = true;
+        }
+    }
+
+    function buildControllers() {
+        const controllerModelFactory = new XRControllerModelFactory();
+
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, -1)
+        ]);
+
+        const line = new THREE.Line(geometry);
+        line.scale.z = 10;
+
+        const controllers = [];
+
+        for (let i = 0; i < 2; i++) {
+            const controller = renderer.xr.getController(i);
+            controller.add(line.clone());
+            controller.userData.selectPressed = false;
+            controller.userData.selectPressedPrev = false;
+            scene.add(controller);
+            controllers.push(controller);
+            vrgroup.add(controller);
+            const grip = renderer.xr.getControllerGrip(i);
+            grip.add(controllerModelFactory.createControllerModel(grip));
+            scene.add(grip);
+            vrgroup.add(grip);
+        }
+
+        return controllers;
+    }
+    function showSkeleton(boolean_Skeleton) {
+        // true = show 
+        //false = hide
+        
+        gltfLoaderHelper.setSkeletonVisible(boolean_Skeleton);
+        render();
+    }
+
+
+    function showBody(boolean_Body) {
+        // true = show 
+        //false = hide
+        gltfLoaderHelper.setModelVisible(boolean_Body);
+        render();
+    }
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        render();
+
+    }
+    
+</script>
+
+{% endblock %}

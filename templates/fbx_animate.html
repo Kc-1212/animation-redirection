@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style id="background">
+    body {
+      background-image: url('/static/css/model_blurred.png');
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: 100% 100%;
+    }
+</style> 
+
+<div class="overlay"></div>
+<div id="notification-bar"></div>
+<!-- <input type="file" id="objFile">
+<button id="upload-button"><img src="/static/css/upload_logo.png" alt="Upload" /></button> -->
+
+<!-- <div class="uploadContainer">
+    <div class="card">
+      <div class="drop_box">
+        <header>
+          <h4>Please upload the 3D Human Character</h4>
+        </header>
+        <p>Files Supported: GLB Human Models only.</p>
+        <input type="file" accept=".glb" id="objFile" style="display:none;">
+        <button class="btn"><img src="/static/css/upload_logo.png" alt="Upload" /></button>
+      </div>
+  
+    </div>
+</div> -->
+  
+<script type="importmap">
+    {
+        "imports": {
+            "three": "/static/build/three.module.js"
+        }
+    }
+</script>
+<script type="module">
+    import * as THREE from 'three';
+
+    import Stats from '/static/jsm/libs/stats.module.js';
+    import { MTLLoader } from '/static/jsm/loaders/MTLLoader.js'
+    import { OrbitControls } from '/static/jsm/controls/OrbitControls.js';
+    import { FBXLoader } from '/static/jsm/loaders/FBXLoader.js';
+    import { OBJLoader } from '/static/jsm/loaders/OBJLoader.js'
+    import * as  SkeletonUtils from '/static/jsm/utils/SkeletonUtils.js'
+    let camera, scene, renderer, stats;
+
+    const clock = new THREE.Clock();
+
+    
+    let mixer
+    let mixer2
+    let mixer3
+    let mixer4
+    let mixer5
+    init();
+    animate();
+
+    function init() {
+
+        const container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+        camera.position.set( 100, 200, 300 );
+
+        scene = new THREE.Scene();
+        // scene.background = new THREE.Color( 0xa0a0a0 );
+        scene.background = new THREE.Color( 0xffffff );
+        // scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+        const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444, 4 );
+        hemiLight.position.set( 0, 200, 0 );
+        scene.add( hemiLight );
+
+        const dirLight = new THREE.DirectionalLight( 0xffffff, 1.5 );
+        dirLight.position.set( 0, 200, 100 );
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 180;
+        dirLight.shadow.camera.bottom = - 100;
+        dirLight.shadow.camera.left = - 120;
+        dirLight.shadow.camera.right = 120;
+        const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+        mesh.rotation.x = - Math.PI / 2;
+        mesh.receiveShadow = true;
+        // scene.add( mesh );
+
+        const grid = new THREE.GridHelper( 200, 20, 0x000000, 0x000000 );
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        // scene.add( grid );
+
+        const tex_loader = new THREE.CubeTextureLoader();
+        const texture = tex_loader.load([
+            '/static/resources/posx.jpg',
+            '/static/resources/negx.jpg',
+            '/static/resources/posy.jpg',
+            '/static/resources/negy.jpg',
+            '/static/resources/posz.jpg',
+            '/static/resources/negz.jpg',
+        ]);
+        texture.encoding = THREE.sRGBEncoding;
+            
+
+        new FBXLoader().load( '/static/resources/models/pg/pg.fbx', function ( object ) {
+            // new FBXLoader().load('/static/resources/models/dummy/handshake.fbx', (anim) => {
+            new FBXLoader().load('/static/resources/models/raw_motion/dance-graceful_250999.fbx', (anim) => {
+                new FBXLoader().load('/static/resources/models/dummy/xbot.fbx', (xbot) => {
+                    // anim4.scale.multiplyScalar(0.1);
+                    let objecthelper = new THREE.SkeletonHelper(object);
+                    objecthelper.skeleton = new THREE.Skeleton(objecthelper.bones)
+
+                    let xbothelper = new THREE.SkeletonHelper(xbot);
+                    xbothelper.skeleton = new THREE.Skeleton(xbothelper.bones)
+                    
+                    // scene.add(objecthelper)
+                    
+                    let new_anim = SkeletonUtils.retargetClip(objecthelper, 
+                                                                xbothelper, 
+                                                                anim.animations[1], 
+                                                                {preserveMatrix : true,
+                                                                    preservePosition: true,
+                                                                    preserveHipPosition: false,
+                                                                    useTargetMatrix:false,
+                                                                    hip : 'pelvis',
+                                                                    useFirstFramePosition:false})
+                    
+                    // object.scale.multiplyScalar(0.1); 
+                    mixer2 = new THREE.AnimationMixer(object.children[1])
+                    mixer2.clipAction(new_anim).play()
+                    // mixer3.clipAction(anim.animations[1]).play()
+                    object.translateX(5)
+                    object.translateZ(108)
+                    
+                    
+                })
+                
+            })
+            object.traverse( function ( child ) {
+
+                if ( child.isMesh ) {
+
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+
+                }
+            
+            } );
+            
+
+            scene.add( object );
+
+        } );
+
+
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.shadowMap.enabled = true;
+        container.appendChild( renderer.domElement );
+
+        const controls = new OrbitControls( camera, renderer.domElement );
+        controls.target.set( 0, 100, 0 );
+        controls.update();
+
+        window.addEventListener( 'resize', onWindowResize );
+
+        // stats
+        stats = new Stats();
+        container.appendChild( stats.dom );
+
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+    //
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        const delta = clock.getDelta();
+
+        if ( mixer ) mixer.update( delta );
+        if ( mixer2 ) mixer2.update( delta );
+        if ( mixer3 ) mixer3.update( delta );
+        if ( mixer4 ) mixer4.update( delta );
+        if ( mixer5 ) mixer5.update( delta );
+
+        renderer.render( scene, camera );
+
+        stats.update();
+
+    }
+</script>
+{% endblock %}
