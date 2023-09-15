@@ -110,11 +110,15 @@
     let camera, scene, renderer, stats;
 
     const clock = new THREE.Clock();
+    let xbot=null
     const animationList = [];
     const ModelList = [];
     let currentAnimIndex=0;
     let currentModelIndex=0
     let mixer
+    let xbothelper=null
+    let objecthelper=null
+    let action =null
     init();
     animate();
  
@@ -211,7 +215,10 @@
     async function GetModel(ModelTable, loader) {
         return new Promise((resolve, reject) => {
             const loadModelPromises = [];
-
+            new FBXLoader().load('/static/resources/models/dummy/xbot.fbx', (object)=>{ 
+                xbot=object
+                console.log("xbot",xbot)
+            })
             const loadModel = async (modelPath) => {
                 return new Promise((resolveModel, rejectModel) => {
                     console.log(modelPath)
@@ -256,15 +263,29 @@
 
     function swapModel(index)
     {
-        console.log(index, ModelList[index].name)
-        let action = ModelList[currentModelIndex].mixer.clipAction(animationList[currentAnimIndex][1])
-        action.stop();
-        action.reset();
+        let selected_model=ModelList[index].model;
+
+        objecthelper = new THREE.SkeletonHelper(selected_model);
+        objecthelper.skeleton = new THREE.Skeleton(objecthelper.bones)
+        xbothelper = new THREE.SkeletonHelper(xbot);
+        xbothelper.skeleton = new THREE.Skeleton(xbothelper.bones)
         removeModelFromScene()
         currentModelIndex=index
-        let selection=ModelList[index]
-        initializeAnimation(selection.mixer)
-        scene.add(selection.model)
+        let anim=animationList[currentAnimIndex][1]
+        let new_anim = SkeletonUtils.retargetClip(objecthelper, 
+                                                                xbothelper, 
+                                                                anim, 
+                                                                {preserveMatrix : true,
+                                                                    preservePosition: true,
+                                                                    preserveHipPosition: false,
+                                                                    useTargetMatrix:false,
+                                                                    hip : 'pelvis',
+                                                                    useFirstFramePosition:false})
+
+        mixer = new THREE.AnimationMixer(selected_model.children[1])
+        action= mixer.clipAction(new_anim)
+        action.play()
+        scene.add(selected_model)
     }
 
     function removeModelFromScene() {
@@ -273,19 +294,7 @@
             scene.remove(modelToRemove);
         }
     }
-    
-    async function initialspawn(ModelTable, loader) {
-       
-        // initializeAnimation(ModelList[0].mixer)
-        // scene.add(ModelList[0].model);
-    }
 
-    function initializeAnimation(localMixer)
-    {
-        const action = localMixer.clipAction(animationList[currentAnimIndex][1]);
-        action.play();
-        mixer=localMixer
-    }
 
     function Getanimation(AnimTable,loader)
     {
@@ -319,11 +328,20 @@
         stats.update();
     }
     function playAnimation(nextAnimation) {
-        let action = mixer.clipAction(animationList[currentAnimIndex][1])
+        let anim=animationList[nextAnimation][1]
+        let new_anim = SkeletonUtils.retargetClip(objecthelper, 
+                                                                xbothelper, 
+                                                                anim, 
+                                                                {preserveMatrix : true,
+                                                                    preservePosition: true,
+                                                                    preserveHipPosition: false,
+                                                                    useTargetMatrix:false,
+                                                                    hip : 'pelvis',
+                                                                    useFirstFramePosition:false})
         currentAnimIndex=nextAnimation
         action.stop();
         action.reset();
-        action = mixer.clipAction(animationList[currentAnimIndex][1])
+        action = mixer.clipAction(new_anim)
         action.play();
     }
 

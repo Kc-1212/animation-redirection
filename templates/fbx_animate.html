@@ -82,6 +82,11 @@
         dirLight.shadow.camera.bottom = - 100;
         dirLight.shadow.camera.left = - 120;
         dirLight.shadow.camera.right = 120;
+        // scene.add( dirLight );
+
+        // scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+
+        // ground
         const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
         mesh.rotation.x = - Math.PI / 2;
         mesh.receiveShadow = true;
@@ -102,6 +107,58 @@
             '/static/resources/negz.jpg',
         ]);
         texture.encoding = THREE.sRGBEncoding;
+        // scene.background = texture;
+        // model
+        
+        // new FBXLoader().load( '/static/resources/models/jeff/jeff.fbx', function ( object ) {
+        //     new FBXLoader().load('/static/resources/models/raw_motion/change-pose_251076.fbx', (anim) => {
+        //         new FBXLoader().load('/static/resources/models/dummy/xbot.fbx', (xbot) => {
+        //             // anim4.scale.multiplyScalar(0.1);
+        //             let objecthelper = new THREE.SkeletonHelper(object);
+        //             objecthelper.skeleton = new THREE.Skeleton(objecthelper.bones)
+
+        //             let xbothelper = new THREE.SkeletonHelper(xbot);
+        //             xbothelper.skeleton = new THREE.Skeleton(xbothelper.bones)
+                    
+        //             // scene.add(objecthelper)
+                    
+        //             let new_anim = SkeletonUtils.retargetClip(objecthelper, 
+        //                                                         xbothelper, 
+        //                                                         anim.animations[1], 
+        //                                                         {preserveMatrix : true,
+        //                                                             preservePosition: true,
+        //                                                             preserveHipPosition: false,
+        //                                                             useTargetMatrix:false,
+        //                                                             hip : 'pelvis',
+        //                                                             useFirstFramePosition:false})
+                    
+        //             // object.scale.multiplyScalar(0.1); 
+        //             mixer = new THREE.AnimationMixer(object.children[1])
+        //             mixer.clipAction(new_anim).play()
+        //             // mixer3.clipAction(anim.animations[1]).play()
+        //             object.translateX(-100)
+        //             object.translateZ(-100)
+                    
+                    
+        //         })
+                
+        //     })
+        //     object.traverse( function ( child ) {
+
+        //         if ( child.isMesh ) {
+
+        //             child.castShadow = true;
+        //             child.receiveShadow = true;
+
+        //         }
+            
+        //     } );
+            
+
+        //     scene.add( object );
+
+        // } );
+
             
 
         new FBXLoader().load( '/static/resources/models/pg/pg.fbx', function ( object ) {
@@ -153,6 +210,205 @@
             scene.add( object );
 
         } );
+        
+        // new FBXLoader().load( '/static/resources/models/andy/andy.fbx', function ( object ) {
+        // // loader3.load( '/static/resources/models/dummy/xbot.fbx', function ( object ) {
+        // // loader.load( '/static/resources/zombie/mremireh_o_desbiens.fbx', function ( object ) {
+            
+        //     // object.scale.multiplyScalar(0.02); 
+        //     // object.scale.multiplyScalar(0.001); 
+        //     // const model_andy = SkeletonUtils.clone(object)
+        //     // scene.add(model_andy)
+        //     // const model_andy = SkeletonUtils.clone(object)
+        //     // object.translateX(-100)
+        //     // object.translateZ(-100)
+        //     // anim3.load('/static/resources/models/female-dance.fbx', (anim) => {
+            
+        //     //     mixer3 = new THREE.AnimationMixer(object)
+                
+        //     //     const idle = mixer3.clipAction(anim.animations[1])
+        //     //     console.log(anim)
+        //     //     idle.play()
+        //     // })
+        //     // const xbot_loader = new FBXLoader();
+        //     // anim3.load('/static/resources/models/raw_motion.fbx', (anim) => {
+        //         new FBXLoader().load('/static/resources/models/dh/airdance.fbx', (anim) => {
+        //             new FBXLoader().load('/static/resources/models/dummy/xbot.fbx', (xbot) => {
+        //         // xbot_loader.load('/static/resources/models/dh/dh.fbx', (xbot) => {
+                    
+        //             // scene.add(model_andy)
+        //             // const model_andy = SkeletonUtils.clone(object).children[1]
+        //             // const model_dh = SkeletonUtils.clone(xbot).children[1]
+        //             // console.log(object)
+        //             // console.log(xbot)
+        //             // console.log(anim)
+        //             // const airdance = THREE.AnimationClip.findByName( anim, 'air-dance_251152' )
+        //             // const tpose = THREE.AnimationClip.findByName( object, '0_T-Pose' );
+        //             // console.log(tpose)
+        //             // mixer3 = new THREE.AnimationMixer(object.children[1])
+        //             // mixer3.clipAction(tpose).play()
+        //             // mixer3.update(0)
+                    
+        //             let andyhelper = new THREE.SkeletonHelper(object);
+        //             andyhelper.skeleton = new THREE.Skeleton(andyhelper.bones)
+
+        //             let xbothelper = new THREE.SkeletonHelper(xbot);
+        //             xbothelper.skeleton = new THREE.Skeleton(xbothelper.bones)
+        //             // console.log(andyhelper)
+        //             // andyhelper.skeleton = model_andy.skeleton; 
+
+        //             // SkeletonUtils.retarget(andyhelper,dhhelper)
+        //             // scene.add(model_andy)
+        //             // scene.add(andyhelper)
+                    
+        //             // const target_skin = (xbot).children[1]
+        //             // console.log(target_skin)
+                    
+        //             // const source_skin = (object).children[1]
+        //             // console.log(source_skin)
+        //             // console.log(anim.skeleton)
+        //             let new_anim = SkeletonUtils.retargetClip(andyhelper, 
+        //                                                         xbothelper, 
+        //                                                         anim.animations[1], 
+        //                                                         {preserveMatrix : true,
+        //                                                             preservePosition: true,
+        //                                                             preserveHipPosition: false,
+        //                                                             useTargetMatrix:false,
+        //                                                             hip : 'pelvis',
+        //                                                             useFirstFramePosition:false})
+        //             // console.log(new_anim)
+        //             // console.log(source)
+        //             // console.log(target)
+
+        //             mixer3 = new THREE.AnimationMixer(object.children[1])
+        //             mixer3.clipAction(new_anim).play()
+        //             // mixer3.clipAction(anim.animations[1]).play()
+        //             // object.translateX(-100)
+        //             // object.translateZ(-100)
+                    
+                    
+        //         })
+        //     })
+        //     object.traverse( function ( child ) {
+
+        //         if ( child.isMesh ) {
+
+        //             child.castShadow = true;
+        //             child.receiveShadow = true;
+
+        //         }
+            
+        //     } );
+            
+
+        //     scene.add( object );
+
+        // } );
+
+        // new FBXLoader().load( '/static/resources/models/dh/dh.fbx', function ( object ) {
+        //     new FBXLoader().load('/static/resources/models/dummy/handshake.fbx', (anim) => {
+        //         new FBXLoader().load('/static/resources/models/dummy/xbot.fbx', (xbot) => {
+        //             // anim4.scale.multiplyScalar(0.1);
+        //             let objecthelper = new THREE.SkeletonHelper(object);
+        //             objecthelper.skeleton = new THREE.Skeleton(objecthelper.bones)
+
+        //             let xbothelper = new THREE.SkeletonHelper(xbot);
+        //             xbothelper.skeleton = new THREE.Skeleton(xbothelper.bones)
+                    
+        //             // scene.add(objecthelper)
+                    
+        //             let new_anim = SkeletonUtils.retargetClip(objecthelper, 
+        //                                                         xbothelper, 
+        //                                                         anim.animations[1], 
+        //                                                         {preserveMatrix : true,
+        //                                                             preservePosition: true,
+        //                                                             preserveHipPosition: false,
+        //                                                             useTargetMatrix:false,
+        //                                                             hip : 'pelvis',
+        //                                                             useFirstFramePosition:false})
+                    
+        //             // object.scale.multiplyScalar(0.1); 
+        //             mixer4 = new THREE.AnimationMixer(object.children[1])
+        //             mixer4.clipAction(new_anim).play()
+        //             // mixer3.clipAction(anim.animations[1]).play()
+        //             object.translateX(-100)
+        //             object.translateZ(100)
+        //             object.rotateY(Math.PI)
+                    
+                    
+        //         })
+                
+        //     })
+        //     object.traverse( function ( child ) {
+
+        //         if ( child.isMesh ) {
+
+        //             child.castShadow = true;
+        //             child.receiveShadow = true;
+
+        //         }
+            
+        //     } );
+            
+
+        //     scene.add( object );
+
+        // } );
+
+        // new FBXLoader().load( '/static/resources/models/desmond/desmond.fbx', function ( object ) {
+        //     new FBXLoader().load('/static/resources/models/raw_motion/b083-runtoblastb.fbx', (anim) => {
+        //         new FBXLoader().load('/static/resources/models/dummy/xbot.fbx', (xbot) => {
+        //             // anim4.scale.multiplyScalar(0.1);
+        //             let objecthelper = new THREE.SkeletonHelper(object);
+        //             objecthelper.skeleton = new THREE.Skeleton(objecthelper.bones)
+
+        //             let xbothelper = new THREE.SkeletonHelper(xbot);
+        //             xbothelper.skeleton = new THREE.Skeleton(xbothelper.bones)
+                    
+        //             // scene.add(objecthelper)
+                    
+        //             let new_anim = SkeletonUtils.retargetClip(objecthelper, 
+        //                                                         xbothelper, 
+        //                                                         anim.animations[1], 
+        //                                                         {preserveMatrix : true,
+        //                                                             preservePosition: true,
+        //                                                             preserveHipPosition: false,
+        //                                                             useTargetMatrix:false,
+        //                                                             hip : 'pelvis',
+        //                                                             useFirstFramePosition:false})
+                    
+        //             // object.scale.multiplyScalar(0.1); 
+        //             mixer5 = new THREE.AnimationMixer(object.children[1])
+        //             mixer5.clipAction(new_anim).play()
+        //             // mixer3.clipAction(anim.animations[1]).play()
+        //             object.translateX(100)
+        //             object.translateZ(-100)
+        //             // object.rotateY(Math.PI)
+                    
+                    
+        //         })
+                
+        //     })
+        //     object.traverse( function ( child ) {
+
+        //         if ( child.isMesh ) {
+
+        //             child.castShadow = true;
+        //             child.receiveShadow = true;
+
+        //         }
+            
+        //     } );
+            
+
+        //     scene.add( object );
+
+        // } );
+        
+
+
+
+
 
 
         renderer = new THREE.WebGLRenderer( { antialias: true } );
