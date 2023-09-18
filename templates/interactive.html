@@ -9,7 +9,8 @@
       background-size: 100% 100%;
       overflow: hidden; /* This prevents scrolling */
     }
-    #button-overlay {
+
+#button-overlay {
         position: absolute;
         bottom: 0;
         left: 0;
@@ -19,7 +20,7 @@
         flex-direction: column;
         justify-content: center;
         align-items: center; /* Center vertically */
-        background-color: rgba(0, 0, 0, 0);
+        background-color: rgba(255, 255, 255, 0);
         z-index: 100;
     }
 
@@ -80,7 +81,83 @@
         }
     }
 
+    .menu__toggler {
+
+    top: 20px;
+    left: 20px;
+    z-index: 999;
+    height: 28px;
+    width: 28px;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    }
+    .menu__toggler span,
+    .menu__toggler span::before,
+    .menu__toggler span::after {
+    position: absolute;
+    content: '';
+    width: 28px;
+    height: 2.5px;
+    background: #fafafa;
+    border-radius: 20px;
+    transition: 500ms cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .menu__toggler span::before {
+    top: -8px;
+    }
+    .menu__toggler span::after {
+    top: 8px;
+    }
+    .menu__toggler.active > span {
+    background: transparent;
+    }
+    .menu__toggler.active > span::before, .menu__toggler.active > span::after {
+    background: #ffffff;
+    top: 0px;
+    z-index: 1000; /* Assign a higher z-index */
+    }
+    .menu__toggler.active > span::before {
+    -webkit-transform: rotate(-225deg);
+            transform: rotate(-225deg);
+    }
+    .menu__toggler.active > span::after {
+    -webkit-transform: rotate(225deg);
+            transform: rotate(225deg);
+    }
+    .menu {
+    position: absolute;
+    left: -30%;
+    z-index: 998;
+    color: #005c9c;
+    background: rgb(7, 5, 5);
+    -webkit-clip-path: polygon(0 0, 100% 0, 85% 100%, 0% 100%);
+            clip-path: polygon(0 0, 100% 0, 85% 100%, 0% 100%);
+    width: 30%;
+    height: 100%;
+    padding: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: 300ms left cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    @media only screen and (max-width: 600px) {
+    .menu {
+        width: 250px;
+        left: -250px;
+        padding: 50px;
+    }
+    }
+    .menu.active {
+    left: 0;
+    }
+    .menu p {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    }
 </style> 
+
 
 <div class="overlay">
     <div id="button-overlay">
@@ -90,17 +167,32 @@
     </div>
 </div>
 <div id="notification-bar"></div>
+
+
+<div class="menu">
+
+    <a class="navbar-brand" href="{{ url_for('latest_3d_loader')}}" style="color: #fff;">3D Loader</a>
+    <input type="file" id="fileInput" style="display: none;" accept=".fbx">
+
+    <a class="navbar-brand" href="#" style="color: #fff;" onclick="document.getElementById('fileInput').click(); return false;">3D Loader</a>
+</div>
+<div class="menu__toggler">
+    <span></span>
+</div>
+
+
   
 <script type="importmap">
     {
         "imports": {
-            "three": "/static/build/three.module.js"
+            "three": "/static/build/three.module.js",
+            "GIF": "/static/gif/dist/gif.js"
         }
     }
 </script>
 <script type="module">
     import * as THREE from 'three';
-
+    import * as gif from 'GIF'
     import Stats from '/static/jsm/libs/stats.module.js';
     import { MTLLoader } from '/static/jsm/loaders/MTLLoader.js'
     import { OrbitControls } from '/static/jsm/controls/OrbitControls.js';
@@ -123,7 +215,7 @@
     animate();
  
     async function init() {
-
+        
         const container = document.createElement( 'div' );
         document.body.appendChild( container );
 
@@ -192,8 +284,8 @@
         window.addEventListener( 'resize', onWindowResize );
 
         // stats
-        stats = new Stats();
-        container.appendChild( stats.dom );
+        // stats = new Stats();
+        // container.appendChild( stats.dom );
         document.addEventListener('keydown', handleKeyDown);
         try{
             await Getanimation(AnimTable,anim)
@@ -325,7 +417,7 @@
         const delta = clock.getDelta();
         if ( mixer ) mixer.update( delta );
         renderer.render( scene, camera );
-        stats.update();
+        // stats.update();
     }
     function playAnimation(nextAnimation) {
         let anim=animationList[nextAnimation][1]
@@ -421,8 +513,39 @@
         // Append the wrapper to the container
         buttonContainer.appendChild(buttonWrapper);
     }
+    const toggler = document.querySelector('.menu__toggler');
+    const menu = document.querySelector('.menu');
+        toggler.addEventListener('click', () => {
+        toggler.classList.toggle('active');
+        menu.classList.toggle('active');
+    });
+    document.getElementById('fileInput').addEventListener('change', function() {
+        var fileInput = document.getElementById("fileInput");
+        var file = fileInput.files[0];
+        uploadFile(file)
+    });
+    function uploadFile(file) {
+        // var fileInput = document.getElementById("objFile");
+        // var file = fileInput.files[0];
+        var request = new XMLHttpRequest();
 
-// // Switch animations every 5 seconds
-// setInterval(switchAnimation, 5000);
+        request.open("PUT", "/upload?filename=" + file.name);
+        request.send(file);
+        request.onreadystatechange = function() {
+            // @TODO: Validate file
+            console.log("Ready State: " + this.readyState + " Status: "+ this.status)
+            if (this.readyState == 4 ) {
+                switch (this.status){
+                    case 200:
+                        console.log("yes")
+                        break;
+                    
+                    default:
+                        console.log("nope")
+                }
+            }
+        };
+    
+    }
 </script>
 {% endblock %}
