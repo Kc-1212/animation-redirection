@@ -47,8 +47,25 @@ def download():
 @app.route('/upload', methods=['PUT'])
 def upload_file():
     file = request.data
-    with open('static/user_data/' + request.args.get('filename'), 'wb') as f:
+    with open('static/user_data/model/' + request.args.get('filename'), 'wb') as f:
         f.write(file)
     return 'File Finish Uploaded.' 
+
+
+# Route to append content to a file
+@app.route('/append_to_file', methods=['POST'])
+def append_to_file():
+    content = request.form.get('content')  # Get the content from the request
+
+    if content:
+        file_path = 'static/user_data/List.txt'  # Specify the path to your file
+        try:
+            with open(file_path, 'a') as file:
+                file.write(content + '\n')  # Append content as a new line
+            return 'Content appended to the file successfully.'
+        except Exception as e:
+            return f'Error appending to the file: {str(e)}'
+    else:
+        return 'Content not provided in the request.'
 
 app.run(host='0.0.0.0', port=5088, debug=True)

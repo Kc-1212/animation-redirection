@@ -174,7 +174,7 @@
     <a class="navbar-brand" href="{{ url_for('latest_3d_loader')}}" style="color: #fff;">3D Loader</a>
     <input type="file" id="fileInput" style="display: none;" accept=".fbx">
 
-    <a class="navbar-brand" href="#" style="color: #fff;" onclick="document.getElementById('fileInput').click(); return false;">3D Loader</a>
+    <a class="navbar-brand" href="#" style="color: #fff;" onclick="document.getElementById('fileInput').click(); return false;">upload</a>
 </div>
 <div class="menu__toggler">
     <span></span>
@@ -211,14 +211,23 @@
     let xbothelper=null
     let objecthelper=null
     let action =null
+    let loader=null
+    let ModelTable = []
+
+    //[ "andy",
+        //                     "desmond",
+        //                     "dh",
+        //                     "jeff",
+        //                     "pg"]
+    const AnimTable =["stand-talk","handshake","female-dance"]
+
     init();
     animate();
  
-    async function init() {
+    function init() {
         
         const container = document.createElement( 'div' );
         document.body.appendChild( container );
-
         camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
         camera.position.set( 100, 200, 300 );
 
@@ -263,12 +272,7 @@
         const loader = new FBXLoader();
         const anim = new FBXLoader()
         
-        const ModelTable =[ "andy",
-                            "desmond",
-                            "dh",
-                            "jeff",
-                            "pg"]
-        const AnimTable =["stand-talk","handshake","female-dance"]
+        
        
         
         renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -287,13 +291,9 @@
         // stats = new Stats();
         // container.appendChild( stats.dom );
         document.addEventListener('keydown', handleKeyDown);
-        try{
-            await Getanimation(AnimTable,anim)
-            await GetModel(ModelTable,loader)
-        }
-        catch (error) {
-            console.error("Error loading animation:", error);
-        }
+        Getanimation(AnimTable,anim)
+
+        get_txt()
     }
 
     function onWindowResize() {
@@ -304,6 +304,32 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
 
     }
+    function getOneModel(path,loader)
+    {
+        console.log(path)
+        new FBXLoader().load('/static/resources/models/dummy/xbot.fbx', (object)=>{ 
+                xbot=object
+                console.log("xbot",xbot)
+            })
+        /*/resources/models*/
+        loader.load('/static/user_data/model/' +path, function (object) {
+            // object.scale.multiplyScalar(0.001);
+            object.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            const localMixer = new THREE.AnimationMixer(object);
+            ModelList.push({ model: object,mixer: localMixer, name: path });
+        });
+        var Tempname=path
+        Tempname=Tempname.replace('.fbx','');
+        Tempname=Tempname+'.jpeg';
+        let i =  ModelList.length;
+        console.log(i,Tempname)
+        generateButton(Tempname,i);
+    }
     async function GetModel(ModelTable, loader) {
         return new Promise((resolve, reject) => {
             const loadModelPromises = [];
@@ -312,9 +338,11 @@
                 console.log("xbot",xbot)
             })
             const loadModel = async (modelPath) => {
+                modelPath=modelPath.replace(".fbx","")
                 return new Promise((resolveModel, rejectModel) => {
-                    console.log(modelPath)
-                    loader.load('/static/resources/models/' + modelPath + '/'+modelPath+'.fbx', function (object) {
+
+                    /*/resources/models*/
+                    loader.load('/static/user_data/model/' +modelPath+'.fbx', function (object) {
                         // object.scale.multiplyScalar(0.001);
                         object.traverse(function (child) {
                             if (child.isMesh) {
@@ -340,7 +368,7 @@
                     resolve();
                     for (let i = 0; i < ModelTable.length; i++) {
                         var Tempname=ModelList[i].name
-                        // Tempname=Tempname.replace('.fbx','.jpeg');
+                        Tempname=Tempname.replace('.fbx','');
                         Tempname=Tempname+'.jpeg';
                         console.log(i,Tempname)
                         generateButton(Tempname,i);
@@ -376,8 +404,10 @@
 
         mixer = new THREE.AnimationMixer(selected_model.children[1])
         action= mixer.clipAction(new_anim)
-        action.play()
         scene.add(selected_model)
+        console.log(selected_model)
+        action.play()
+        
     }
 
     function removeModelFromScene() {
@@ -522,6 +552,7 @@
     document.getElementById('fileInput').addEventListener('change', function() {
         var fileInput = document.getElementById("fileInput");
         var file = fileInput.files[0];
+        
         uploadFile(file)
     });
     function uploadFile(file) {
@@ -537,7 +568,10 @@
             if (this.readyState == 4 ) {
                 switch (this.status){
                     case 200:
-                        console.log("yes")
+
+                        ModelTable.push(file.name);
+                        const loader = new FBXLoader();
+                        getOneModel(file.name,loader)
                         break;
                     
                     default:
@@ -545,7 +579,61 @@
                 }
             }
         };
-    
+        write_to_file(file.name)
     }
+    function get_txt(){
+        // Fetch the text file
+        fetch("/static/user_data/List.txt")
+        .then(function(response) {
+            if (!response.ok) {
+            throw new Error("Network response was not ok");
+            }
+            return response.text();
+        })
+        .then(function(text) {
+            var lines = text.split('\r\n'); // Split the text into an array of lines
+            
+            ModelTable=lines
+            
+            console.log(ModelTable);
+            if(ModelTable.length>1)
+            {
+                ModelTable.pop()
+                const loader = new FBXLoader();
+                GetModel(ModelTable,loader)
+            }
+            else{
+                console.log("no previous model")
+            }
+            return lines
+        })
+        .catch(function(error) {
+            console.error("Error loading the file:", error);
+        });
+    }
+    function write_to_file(content) {
+        if (!content) {
+            console.error("Content is empty.");
+            return;
+        }
+
+        // Create a FormData object to send data as a form
+        const formData = new FormData();
+        formData.append("content", content);
+
+        // Make a POST request to the Flask route
+        fetch("/append_to_file", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+            console.log(data); // Display the response from the server
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+    }
+
 </script>
 {% endblock %}
