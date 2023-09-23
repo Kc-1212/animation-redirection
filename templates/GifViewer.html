@@ -160,11 +160,45 @@ body {
 </script>
 <script type="module">
 
-    show()
-    show()
-    show()
-    show()
-    function show() {
+  get_txt()
+  function get_txt() {
+    // Fetch the text file
+    fetch("/static/user_data/Gif_list.txt")
+      .then(function(response) {
+          if (!response.ok) {
+              throw new Error("Network response was not ok");
+          }
+          return response.text();
+      })
+      .then(function(text) {
+          var lines = text.split('\r\n'); // Split the text into an array of lines
+          if (lines.length > 1) {
+              lines.pop();
+          } else {
+              console.log("no previous model");
+          }
+          var modelArray = [];
+          var animArray = [];
+
+          lines.forEach(function(line) {
+              var parts = line.split("@");
+              if (parts.length === 2) {
+                  modelArray.push(parts[0]);
+                  animArray.push(parts[1]);
+                  show(line,parts[0],parts[1])
+              }
+          });
+
+          console.log("Model Array:", modelArray);
+          console.log("Anim Array:", animArray);
+          return lines;
+      })
+      .catch(function(error) {
+          console.error("Error loading the file:", error);
+      });
+    }
+
+    function show(gif,name,animation) {
         // Create a post card element
         const postCard = document.createElement('div');
         postCard.classList.add('post-card');
@@ -175,17 +209,17 @@ body {
         postCard.appendChild(postHeader);
 
         const userProfilePicture = document.createElement('img');
-        userProfilePicture.src = 'static/resources/Icons/giphy (2).gif'; // Update the image source
+        userProfilePicture.src = 'static/resources/Icons/'+name+'.jpeg'; // Update the image source
         userProfilePicture.alt = 'User Profile Picture';
         postHeader.appendChild(userProfilePicture);
         const username = document.createElement('span');
         username.classList.add('username');
-        username.textContent = 'username';
+        username.textContent = name;
         postHeader.appendChild(username);
 
         const postImage = document.createElement('img');
         postImage.classList.add('post-image');
-        postImage.src = 'static/resources/Icons/giphy (1).gif'; // Update the image source
+        postImage.src = 'static/user_data/gif/'+gif; // Update the image source
         postImage.alt = 'Post Image';
         postCard.appendChild(postImage);
 
