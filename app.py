@@ -37,12 +37,10 @@ def animate():
 @app.route('/Interactive')
 def interactive():
     return render_template('interactive.html')
-@app.route("/download")
-def download():
-    try:
-        return send_file("static/assets/smpl.glb", as_attachment=True, download_name="model.obj")
-    except Exception as e:
-        return str(e)
+
+@app.route('/GifViewer')
+def GifViewer():
+    return render_template('GifViewer.html')
 
 @app.route('/upload', methods=['PUT'])
 def upload_file():
@@ -51,6 +49,29 @@ def upload_file():
         f.write(file)
     return 'File Finish Uploaded.' 
 
+@app.route('/upload_Gif', methods=['PUT'])
+def upload_Gif():
+    file = request.data
+    with open('static/user_data/gif/' + request.args.get('filename'), 'wb') as f:
+        f.write(file)
+    return 'File Finish Uploaded.' 
+
+# append_to_gif_list
+
+@app.route('/append_to_gif_list', methods=['POST'])
+def append_to_gif_list():
+    content = request.form.get('content')  # Get the content from the request
+
+    if content:
+        file_path = 'static/user_data/Gif_list.txt'  # Specify the path to your file
+        try:
+            with open(file_path, 'a') as file:
+                file.write(content + '\n')  # Append content as a new line
+            return 'Content appended to the file successfully.'
+        except Exception as e:
+            return f'Error appending to the file: {str(e)}'
+    else:
+        return 'Content not provided in the request.'
 
 # Route to append content to a file
 @app.route('/append_to_file', methods=['POST'])

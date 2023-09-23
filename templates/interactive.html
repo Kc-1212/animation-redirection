@@ -10,7 +10,7 @@
       overflow: hidden; /* This prevents scrolling */
     }
 
-#button-overlay {
+    #button-overlay {
         position: absolute;
         bottom: 0;
         left: 0;
@@ -20,7 +20,7 @@
         flex-direction: column;
         justify-content: center;
         align-items: center; /* Center vertically */
-        background-color: rgba(255, 255, 255, 0);
+        background-color: rgb(0, 0, 0,0);
         z-index: 100;
     }
 
@@ -80,6 +80,59 @@
             transform: rotate(360deg);
         }
     }
+
+    .photo-button {
+        width: 50px;
+        height: 50px;
+        top: 0%;
+        right: 5%;
+        margin-top: -50px;
+        margin-left: -50px;
+        position: absolute;
+    }
+    .circle {
+        position: absolute;
+        top: 12%;
+        left: 12%;
+        bottom: 12%;
+        right: 12%;
+        border-radius: 100%;
+        background-color: #ff0000;
+        opacity: 1;
+        z-index: 11;
+    }
+
+    .ring {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        
+        border-radius: 100%;
+        border: 0.5em solid #000000;
+        opacity: 0;
+        z-index: 10;
+    }
+
+    .ring2 {
+        position: absolute;
+        top: -30%; /* Adjust top, left, bottom, right, and size as needed */
+        left: -30%;
+        bottom: -30%;
+        right: -30%;
+        
+        /* Use background-image property to set the JPEG image */
+        background-image: url('static/resources/Icons/icon3.png');
+        background-size: cover; /* Adjust this property to control how the image is displayed */
+        background-repeat: no-repeat; /* Prevent image repetition */
+        background-position: center center; /* Center the image */
+        animation: spin 4s linear infinite;
+        border-radius: 100%; /* You can adjust this to control the roundness of the ring */
+        border: 0.5em solid transparent; /* Remove border color, if not needed */
+        opacity: 0;
+    }
+    
 
     .menu__toggler {
 
@@ -156,13 +209,28 @@
     font-size: 1.4rem;
     margin-bottom: 1rem;
     }
+    
 </style> 
+  
+<script type="importmap">
+    {
+        "imports": {
+            "three": "/static/build/three.module.js"
+        }
+    }
+</script>
+
+<script src="/static/gif/gif.js.optimized-master/main/gif.js"></script>
 
 
 <div class="overlay">
     <div id="button-overlay">
         <div id="button-container">
-            
+            <div class="photo-button" >
+                <div class="circle" id="record_trigger" ></div>
+                <div class="ring" id="trigger_ring"></div>
+                <div class="ring2" id="trigger_ring2"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -175,24 +243,17 @@
     <input type="file" id="fileInput" style="display: none;" accept=".fbx">
 
     <a class="navbar-brand" href="#" style="color: #fff;" onclick="document.getElementById('fileInput').click(); return false;">upload</a>
+    
 </div>
 <div class="menu__toggler">
     <span></span>
 </div>
 
 
-  
-<script type="importmap">
-    {
-        "imports": {
-            "three": "/static/build/three.module.js",
-            "GIF": "/static/gif/main/gif.js"
-        }
-    }
-</script>
+
 <script type="module">
     import * as THREE from 'three';
-    import * as gif from 'GIF'
+
     import Stats from '/static/jsm/libs/stats.module.js';
     import { MTLLoader } from '/static/jsm/loaders/MTLLoader.js'
     import { OrbitControls } from '/static/jsm/controls/OrbitControls.js';
@@ -200,6 +261,7 @@
     import { OBJLoader } from '/static/jsm/loaders/OBJLoader.js'
     import * as  SkeletonUtils from '/static/jsm/utils/SkeletonUtils.js'
     let camera, scene, renderer, stats;
+
 
     const clock = new THREE.Clock();
     let xbot=null
@@ -226,6 +288,15 @@
  
     function init() {
         
+        
+
+
+        // Example usage:
+        const imageArray = [
+        'static/user_data/Jpeg/image1.jpeg',
+        'static/user_data/Jpeg/image2.jpeg',
+        'static/user_data/Jpeg/image3.jpeg',
+        ];
         const container = document.createElement( 'div' );
         document.body.appendChild( container );
         camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
@@ -271,11 +342,7 @@
         ]);
         const loader = new FBXLoader();
         const anim = new FBXLoader()
-        
-        
-       
-        
-        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer = new THREE.WebGLRenderer( { antialias: true , preserveDrawingBuffer: true} );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
         renderer.shadowMap.enabled = true;
@@ -286,23 +353,15 @@
         controls.update();
 
         window.addEventListener( 'resize', onWindowResize );
-
-        // stats
-        // stats = new Stats();
-        // container.appendChild( stats.dom );
         document.addEventListener('keydown', handleKeyDown);
         Getanimation(AnimTable,anim)
-
+        
         get_txt()
     }
-
     function onWindowResize() {
-
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-
         renderer.setSize( window.innerWidth, window.innerHeight );
-
     }
     function getOneModel(path,loader)
     {
@@ -311,9 +370,7 @@
                 xbot=object
                 console.log("xbot",xbot)
             })
-        /*/resources/models*/
         loader.load('/static/user_data/model/' +path, function (object) {
-            // object.scale.multiplyScalar(0.001);
             object.traverse(function (child) {
                 if (child.isMesh) {
                     child.castShadow = true;
@@ -322,6 +379,7 @@
             });
             const localMixer = new THREE.AnimationMixer(object);
             ModelList.push({ model: object,mixer: localMixer, name: path });
+            ModelTable.push(path);
         });
         var Tempname=path
         Tempname=Tempname.replace('.fbx','');
@@ -340,10 +398,7 @@
             const loadModel = async (modelPath) => {
                 modelPath=modelPath.replace(".fbx","")
                 return new Promise((resolveModel, rejectModel) => {
-
-                    /*/resources/models*/
                     loader.load('/static/user_data/model/' +modelPath+'.fbx', function (object) {
-                        // object.scale.multiplyScalar(0.001);
                         object.traverse(function (child) {
                             if (child.isMesh) {
                                 child.castShadow = true;
@@ -421,24 +476,19 @@
     function Getanimation(AnimTable,loader)
     {
         let i=0
-        while(i<AnimTable.length)
-        // Load the FBX ANIMATION   
+        while(i<AnimTable.length)   
         {
             loader.load('/static/resources/models/raw_motion/'+AnimTable[i]+".fbx", (fbx) => {
                 let animation = fbx.animations;
                 if (animation && animation.length > 0) {
-                    // Store each animation in the list
                     animationList.push(animation);
-                    
                 }
                 }, (xhr) => {
                 }, (error) => {
                     console.error('Error loading FBX model:', error);
                 }
             );
-            
             i++
-            
         }
     }
 
@@ -555,6 +605,45 @@
         
         uploadFile(file)
     });
+    const recordButton = document.getElementById("record_trigger");
+    const ring2 = document.getElementById("trigger_ring2");
+    let isButtonActive = false;
+
+    recordButton.addEventListener("click", () => {
+        // Mouse button is pressed
+        isButtonActive = true;
+        // Show ring2
+        ring2.style.opacity = "1";
+        let pictureList=captureScreenshots(2,30,renderer);
+        console.log(pictureList)
+        
+    });
+    function uploadGif(file) {
+        // var fileInput = document.getElementById("objFile");
+        // var file = fileInput.files[0];
+        var request = new XMLHttpRequest();
+
+        request.open("PUT", "/upload_Gif?filename=" + file.name);
+        request.send(file);
+        request.onreadystatechange = function() {
+            // @TODO: Validate file
+            console.log("Ready State: " + this.readyState + " Status: "+ this.status)
+            if (this.readyState == 4 ) {
+                switch (this.status){
+                    case 200:
+                        write_to_gif_list(file.name)
+                        // ModelTable.push(file.name);
+                        // const loader = new FBXLoader();
+                        // getOneModel(file.name,loader)
+                        break;
+                    
+                    default:
+                        console.log("nope")
+                }
+            }
+        };
+    }
+
     function uploadFile(file) {
         // var fileInput = document.getElementById("objFile");
         // var file = fileInput.files[0];
@@ -572,6 +661,7 @@
                         ModelTable.push(file.name);
                         const loader = new FBXLoader();
                         getOneModel(file.name,loader)
+                        write_to_file(file.name)
                         break;
                     
                     default:
@@ -579,7 +669,6 @@
                 }
             }
         };
-        write_to_file(file.name)
     }
     function get_txt(){
         // Fetch the text file
@@ -634,6 +723,122 @@
             console.error("Error:", error);
         });
     }
+    function write_to_gif_list(content) {
+        if (!content) {
+            console.error("Content is empty.");
+            return;
+        }
 
+        // Create a FormData object to send data as a form
+        const formData = new FormData();
+        formData.append("content", content);
+
+        // Make a POST request to the Flask route
+        fetch("/append_to_gif_list", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+            console.log(data); // Display the response from the server
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+    }
+    function createGif(imageArray, interval) {
+        const gif = new GIF({
+            workers: 2,
+            quality: 10,
+            workerScript: '/static/gif/gif.js.optimized-master/main/gif.worker.js', // Specify the correct path
+        });
+        let framesAdded = 0; // Track the number of frames added
+        console.log("in gif", imageArray);
+
+        imageArray.forEach((imageDataUrl) => {
+            try {
+                // Create a new Image object and set its source to the data URL
+                const img = new Image();
+                img.src = imageDataUrl;
+
+                img.onload = () => {
+                    gif.addFrame(img, { delay: interval });
+                    framesAdded++;
+
+                    if (framesAdded === imageArray.length) {
+                        gif.render();
+                        gif.on('finished', (blob) => {
+                            console.log("GIF rendering finished.");
+                            try {
+                                let newName=ModelList[currentModelIndex].name.replace(".fbx","")
+                                let newAnimName=AnimTable[currentAnimIndex].replace(".fbx","")
+                                newName=newName+"@"+newAnimName +".gif"
+                                const file = new File([blob],newName, { type: "image/gif" });
+                                uploadGif(file);
+                            } catch (err) {
+                                console.error("Error converting GIF to Blob:", err);
+                            }
+                        });
+                    }
+                };
+            } catch (err) {
+                console.error("Error processing image:", err);
+            }
+        });
+    }
+
+    function captureScreenshots(durationInSeconds, framesPerSecond, renderer) {
+        return new Promise((resolve, reject) => {
+            // Calculate the interval between each screenshot in milliseconds
+            const interval = 1000 / framesPerSecond;
+
+            // Initialize a frame counter and an array to store screenshots
+            let frameCount = 0;
+            const screenshots = [];
+
+            // Create a function to capture a single screenshot
+            function captureScreenshot() {
+                // Check if the desired number of frames has been captured
+                if (frameCount >= durationInSeconds * framesPerSecond) {
+                    clearInterval(intervalId); // Stop capturing screenshots
+                    resolve(screenshots); // Resolve the promise with the captured screenshots
+                    console.log(frameCount)
+                    return;
+                }
+
+                // Capture the screenshot as a data URL (assuming renderer is defined)
+                const screenshotDataUrl = renderer.domElement.toDataURL("image/jpeg");
+
+                screenshots.push(screenshotDataUrl);
+
+                frameCount++;
+            }
+
+            // Schedule the captureScreenshot function to run at the specified interval
+            const intervalId = setInterval(captureScreenshot, interval);
+        })
+        .then((screenshots) => {
+            // Call createGif with the captured screenshots
+            createGif(screenshots,framesPerSecond);
+        })
+        .catch((error) => {
+            console.error("Error capturing screenshots:", error);
+        });
+    }
+
+    
+    function dataURLToBlob(dataURL) {
+        const parts = dataURL.split(';base64,');
+        const contentType = parts[0].split(':')[1];
+        const raw = window.atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+
+        for (let i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+
+        return new Blob([uInt8Array], { type: contentType });
+    }
 </script>
 {% endblock %}
