@@ -127,7 +127,7 @@ body {
 }
 
 .post-caption {
-    /* Add your caption styles here */
+    font-weight: bold;
 }
 
 .post-comments {
@@ -165,99 +165,101 @@ body {
     // Fetch the text file
     fetch("/static/user_data/Gif_list.txt")
       .then(function(response) {
-          if (!response.ok) {
-              throw new Error("Network response was not ok");
-          }
-          return response.text();
-      })
-      .then(function(text) {
-          var lines = text.split('\r\n'); // Split the text into an array of lines
-          if (lines.length > 1) {
-              lines.pop();
-          } else {
-              console.log("no previous model");
-          }
-          var modelArray = [];
-          var animArray = [];
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        return response.text();
+    })
+    .then(function(text) {
+        var lines = text.split('\r\n'); // Split the text into an array of lines
+        if (lines.length > 1) {
+            lines.pop();
+        } else {
+            console.log("no previous model");
+        }
+        var modelArray = [];
+        var animArray = [];
 
-          lines.forEach(function(line) {
-              var parts = line.split("@");
-              if (parts.length === 2) {
-                  modelArray.push(parts[0]);
-                  animArray.push(parts[1]);
-                  show(line,parts[0],parts[1])
-              }
-          });
+        lines.forEach(function(line) {
+            var parts = line.split("@");
+            if (parts.length === 2) {
+                modelArray.push(parts[0]);
+                animArray.push(parts[1]);
+                show(line,parts[0],parts[1])
+            }
+        });
 
-          console.log("Model Array:", modelArray);
-          console.log("Anim Array:", animArray);
-          return lines;
-      })
-      .catch(function(error) {
-          console.error("Error loading the file:", error);
-      });
-    }
-
-    function show(gif,name,animation) {
-        // Create a post card element
-        const postCard = document.createElement('div');
-        postCard.classList.add('post-card');
-
-        // Create and append elements for the post card content
-        const postHeader = document.createElement('div');
-        postHeader.classList.add('post-header');
-        postCard.appendChild(postHeader);
-
-        const userProfilePicture = document.createElement('img');
-        userProfilePicture.src = 'static/resources/Icons/'+name+'.jpeg'; // Update the image source
-        userProfilePicture.alt = 'User Profile Picture';
-        postHeader.appendChild(userProfilePicture);
-        const username = document.createElement('span');
-        username.classList.add('username');
-        username.textContent = name;
-        postHeader.appendChild(username);
-
-        const postImage = document.createElement('img');
-        postImage.classList.add('post-image');
-        postImage.src = 'static/user_data/gif/'+gif; // Update the image source
-        postImage.alt = 'Post Image';
-        postCard.appendChild(postImage);
-
-        const postActions = document.createElement('div');
-        postActions.classList.add('post-actions');
-        postCard.appendChild(postActions);
-
-        const postCaption = document.createElement('div');
-        postCaption.classList.add('post-caption');
-        postCard.appendChild(postCaption);
-
-        document.body.appendChild(postCard);
-
-    }
-    const toggler = document.querySelector('.menu__toggler');
-    const menu = document.querySelector('.menu');
-        toggler.addEventListener('click', () => {
-        toggler.classList.toggle('active');
-        menu.classList.toggle('active');
+        console.log("Model Array:", modelArray);
+        console.log("Anim Array:", animArray);
+        return lines;
+    })
+    .catch(function(error) {
+        console.error("Error loading the file:", error);
     });
-    // Get all anchor tags inside the side menu
-    // Function to create a new menu item
-    function createMenuItem(text, href) {
-        const menu = document.querySelector('.menu');
-        
-        // Create a new anchor tag
-        const menuItem = document.createElement('a');
-        menuItem.href = href;
-        menuItem.classList.add('nav-link');
-        
-        // Create a paragraph element for the menu item text
-        const menuText = document.createElement('p');
-        menuText.textContent = text;
-        
-        // Append the text to the anchor tag and the anchor tag to the menu
-        menuItem.appendChild(menuText);
-        menu.appendChild(menuItem);
-    }
+  }
+
+  function show(gif,name,animation) {
+      // Create a post card element
+      const postCard = document.createElement('div');
+      postCard.classList.add('post-card');
+
+      // Create and append elements for the post card content
+      const postHeader = document.createElement('div');
+      postHeader.classList.add('post-header');
+      postCard.appendChild(postHeader);
+
+      const userProfilePicture = document.createElement('img');
+      userProfilePicture.src = 'static/resources/Icons/'+name+'.jpeg'; // Update the image source
+      userProfilePicture.alt = 'User Profile Picture';
+      postHeader.appendChild(userProfilePicture);
+      const username = document.createElement('span');
+      username.classList.add('username');
+      username.textContent = name;
+      postHeader.appendChild(username);
+
+      const postImage = document.createElement('img');
+      postImage.classList.add('post-image');
+      postImage.src = 'static/user_data/gif/'+gif; // Update the image source
+      postImage.alt = 'Post Image';
+      postCard.appendChild(postImage);
+
+      const postActions = document.createElement('div');
+      postActions.classList.add('post-actions');
+      postCard.appendChild(postActions);
+
+      const postCaption = document.createElement('div');
+      postCaption.classList.add('post-caption');
+      postCaption.textContent = "Animation: " + animation.replace(".gif","");
+      postCard.appendChild(postCaption);
+
+
+      document.body.appendChild(postCard);
+
+  }
+  const toggler = document.querySelector('.menu__toggler');
+  const menu = document.querySelector('.menu');
+      toggler.addEventListener('click', () => {
+      toggler.classList.toggle('active');
+      menu.classList.toggle('active');
+  });
+  // Get all anchor tags inside the side menu
+  // Function to create a new menu item
+  function createMenuItem(text, href) {
+      const menu = document.querySelector('.menu');
+      
+      // Create a new anchor tag
+      const menuItem = document.createElement('a');
+      menuItem.href = href;
+      menuItem.classList.add('nav-link');
+      
+      // Create a paragraph element for the menu item text
+      const menuText = document.createElement('p');
+      menuText.textContent = text;
+      
+      // Append the text to the anchor tag and the anchor tag to the menu
+      menuItem.appendChild(menuText);
+      menu.appendChild(menuItem);
+  }
 
 </script>
 {% endblock %}
