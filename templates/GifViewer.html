@@ -2,11 +2,108 @@
 
 {% block content %}
 <style id="post">
-body {
-    background-color: rgb(161, 166, 180);
-    margin: 0; /* Remove default margin to ensure full coverage */
-    padding: 0; /* Remove default padding to ensure full coverage */
-}
+
+:root {
+	--bgColor: #C8C2AA;
+	--color: #4D493E;
+	--letterSpacing: 0.1rem;
+	--boxShadow: 3px 3px 0 rgba(77, 73, 62, 0.6);
+	}
+	@font-face {
+	font-family: 'Amun Celestial';
+	src: url('/static/resources/font/amun_celestial.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+	}
+
+	/* Reset Focus Outline */
+	*:focus {
+	outline: none !important;
+	}
+
+	/* Body Styles */
+	body {
+	background-color: var(--bgColor);
+	background-size: 4px 4px;
+	background-image: linear-gradient(
+		90deg,
+		transparent,
+		transparent 3px,
+		rgba(0, 0, 0, 0.07) 4px
+	),
+	linear-gradient(transparent, transparent 3px, rgba(0, 0, 0, 0.07) 4px);
+	color: var(--color);
+	font-family: "Noto Sans", sans-serif;
+	font-weight: 300;
+	margin: 0;
+	min-height: 100vh;
+	box-shadow: inset 0 0 150px rgba(77, 73, 62, 0.4), inset 0 0 150px rgba(77, 73, 62, 0.3);
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+	letter-spacing: var(--letterSpacing);
+	}
+
+	/* Container Styles */
+	.container {
+	padding: 0 4rem;
+	}
+
+	/* Header Styles */
+	header {
+	padding: 1rem 0;
+	}
+
+	/* Heading Styles */
+	h1 {
+	text-transform: uppercase;
+	font-weight: 300;
+	letter-spacing: 0.7rem;
+	text-shadow: 0.3rem 0.3rem 0 rgba(77, 73, 62, 0.3);
+	}
+
+	/* Span Styles */
+	h1 span {
+	margin-right: -0.7rem;
+	}
+
+	/* Small Styles */
+	h1 small::before {
+	content: "–";
+	}
+
+	h1 small {
+	font-weight: 500;
+	text-transform: none;
+	text-shadow: none;
+	letter-spacing: var(--letterSpacing);
+	}
+
+	/* Pattern Styles */
+	.pattern {
+	border-top: 2px solid var(--color);
+	}
+
+	/* Pattern Inner Styles */
+	.pattern-inner {
+	height: 40px;
+	background-size: 50px 3px, 50px 1px, 50px 1px, 50px 1px, 50px 1px, 50px 1px, 50px 1px, 50px 1px, 50px 1px;
+	background-position: 0 0, 22px 4px, 22px 5px, 22px 6px, 22px 7px, 28px 12px, 28px 13px, 28px 14px, 28px 15px;
+	background-image: linear-gradient(
+		90deg,
+		var(--color),
+		var(--color) 10px,
+		transparent 10px
+	),
+	linear-gradient(
+		90deg,
+		var(--color),  /* Another gradient definition */
+		var(--color) 10px,  /* Another gradient definition */
+		transparent 10px  /* Another gradient definition */
+	);
+	background-repeat: repeat-x;
+	}
+
 
 .menu__toggler {
 
@@ -84,17 +181,46 @@ body {
   margin-bottom: 1rem;
 }
 /* Basic styling for the post card */
+.post-card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%; /* Set the width to 100% */
+    margin: 0; /* Remove any margin */
+    padding: 0; /* Remove any padding */
+}
+
+
 .post-card {
-    background-color: rgb(234, 115, 23);
-    border: 1px solid #00000000;
+    background-color: var(--bgColor);
+    border: 1px solid transparent;
     margin: 10px;
     padding: 10px;
-    width: calc(33.33% - 20px);
+    width: calc(33.33% - 20px); /* 33.33% - 20px for spacing */
     box-sizing: border-box;
-    display: inline-block;
-    vertical-align: top;
     border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    z-index: 1; /* Assign a higher z-index */
 }
+
+.post-card::before {
+    content: "";
+    position: absolute;
+    left: -100%; /* Start off-screen to the left */
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color);
+    transition: left 0.2s; /* Transition the left property */
+		z-index: -100; /* Assign a higher z-index */
+
+}
+
+.post-card:hover::before {
+    left: 0; /* Slide in from left to right on hover */
+}
+
 .post-header {
     display: flex;
     align-items: center;
@@ -159,7 +285,8 @@ a.navbar-brand {
     <span></span>
 </div>
 
-
+<div class="post-card-container" id="post-card-container">
+</div>
 <script type="importmap">
     {
         "imports": {
@@ -241,8 +368,8 @@ a.navbar-brand {
       postCaption.textContent = "Animation: " + animation.replace(".gif","");
       postCard.appendChild(postCaption);
 
-
-      document.body.appendChild(postCard);
+			const postcontainer = document.getElementById("post-card-container");
+      postcontainer.appendChild(postCard);
 
   }
   const toggler = document.querySelector('.menu__toggler');
