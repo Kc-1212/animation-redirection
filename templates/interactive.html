@@ -98,11 +98,13 @@
         right: 12%;
         border-radius: 100%;
         background-color: seashell;
-        animation: breathe 4s infinite alternate paused; /* Apply the breathing animation with 'paused' state */
+        /* animation: breathe 4s infinite alternate paused; Apply the breathing animation with 'paused' state */
         opacity: 1;
         z-index: 11;
     }
-
+    .animate {
+        animation: breathe 4s infinite alternate;
+    }
     .circle img {
         position: absolute; /* Position the image absolutely within the .circle */
         top: 0;
@@ -144,13 +146,13 @@
         opacity: 0;
     }
     @keyframes breathe {
-    0% {
-        background-color: seashell; /* Start with red */
+        0% {
+            background-color: seashell; /* Start with red */
+        }
+        100% {
+            background-color: #ff0000; /* End with seashell */
+        }
     }
-    100% {
-        background-color: #ff0000; /* End with seashell */
-    }
-}
 
     .menu__toggler {
 
@@ -631,6 +633,8 @@
         // Show ring2
         ring2.style.opacity = "1";
         const circle = document.getElementById("record_trigger");
+        circle.classList.add('animate');
+
         circle.style.animationPlayState = 'running';        
         dimAndDisableButtons()
         let pictureList=captureScreenshots(5,30,renderer);
@@ -654,8 +658,8 @@
                         const ring2 = document.getElementById("trigger_ring2");
                         undimAndEnableButtons()
                         const circle = document.getElementById("record_trigger");
-                        circle.style.animationPlayState = 'paused';
-                        circle.style.backgroundColor = 'seashell';
+                        circle.classList.remove('animate');
+
                         ring2.style.opacity="0"
                         break;
                     
