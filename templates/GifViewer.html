@@ -1,4 +1,3 @@
-{% extends 'base.html' %}
 
 {% block content %}
 <style id="post">
@@ -152,7 +151,7 @@
 }
 .menu {
   position: absolute;
-  left: -30%;
+  left: -100%;
   z-index: 998;
   color: seashell;
   background: rgb(147, 75, 0);
@@ -202,6 +201,7 @@
     position: relative;
     overflow: hidden;
     z-index: 1; /* Assign a higher z-index */
+    box-shadow: 0 0 0 2px var(--color); /* Add a border outline */
 }
 
 .post-card::before {
@@ -214,7 +214,7 @@
     background-color: var(--color);
     transition: left 0.2s; /* Transition the left property */
 		z-index: -100; /* Assign a higher z-index */
-
+  
 }
 
 .post-card:hover::before {
@@ -236,7 +236,7 @@
 
 .username {
     font-weight: bold;
-    color: white;
+    color: seashell;
 }
 
 .post-image {
@@ -272,14 +272,14 @@
 
 a.navbar-brand {
     color: seashell;
+    text-decoration: none; 
 }
 
 
 </style>
     
 <div class="menu">
-    <a class="navbar-brand" href="{{ url_for('GifViewer')}}">3D Loader</a>
-
+    <a class="navbar-brand" href="{{ url_for('interactive')}}">3D Loader</a>
 </div>
 <div class="menu__toggler">
     <span></span>

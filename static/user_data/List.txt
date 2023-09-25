@@ -1,4 +1,0 @@
-pg.fbx
-jeff.fbx
-unity_jojo.fbx
-desmond.fbx

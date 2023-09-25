@@ -97,9 +97,20 @@
         bottom: 12%;
         right: 12%;
         border-radius: 100%;
-        background-color: #ff0000;
+        background-color: seashell;
+        animation: breathe 4s infinite alternate paused; /* Apply the breathing animation with 'paused' state */
         opacity: 1;
         z-index: 11;
+    }
+
+    .circle img {
+        position: absolute; /* Position the image absolutely within the .circle */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Maintain aspect ratio and cover the circle */
+        border-radius: 100%; /* Apply border-radius to match the circle */
     }
 
     .ring {
@@ -132,7 +143,14 @@
         border: 0.5em solid transparent; /* Remove border color, if not needed */
         opacity: 0;
     }
-    
+    @keyframes breathe {
+    0% {
+        background-color: seashell; /* Start with red */
+    }
+    100% {
+        background-color: #ff0000; /* End with seashell */
+    }
+}
 
     .menu__toggler {
 
@@ -181,7 +199,7 @@
     }
     .menu {
     position: absolute;
-    left: -30%;
+    left: -100%;
     z-index: 998;
     color: #005c9c;
     background: rgb(7, 5, 5);
@@ -227,7 +245,9 @@
     <div id="button-overlay">
         <div id="button-container">
             <div class="photo-button" >
-                <div class="circle" id="record_trigger" ></div>
+                <div class="circle" id="record_trigger" >
+                    <img src="/static/resources/Icons/recording icon.png" alt="Your Photo">
+                </div>
                 <div class="ring" id="trigger_ring"></div>
                 <div class="ring2" id="trigger_ring2"></div>
             </div>
@@ -238,12 +258,8 @@
 
 
 <div class="menu">
-
-    <a class="navbar-brand" href="{{ url_for('latest_3d_loader')}}" style="color: #fff;">3D Loader</a>
     <input type="file" id="fileInput" style="display: none;" accept=".fbx">
-
-    <a class="navbar-brand" href="#" style="color: #fff;" onclick="document.getElementById('fileInput').click(); return false;">upload</a>
-    
+    <a class="navbar-brand" href="#" style="color: #fff;" onclick="document.getElementById('fileInput').click(); return false;">upload</a> 
 </div>
 <div class="menu__toggler">
     <span></span>
@@ -275,28 +291,12 @@
     let action =null
     let loader=null
     let ModelTable = []
-
-    //[ "andy",
-        //                     "desmond",
-        //                     "dh",
-        //                     "jeff",
-        //                     "pg"]
     const AnimTable =["stand-talk","handshake","female-dance"]
 
     init();
     animate();
  
     function init() {
-        
-        
-
-
-        // Example usage:
-        const imageArray = [
-        'static/user_data/Jpeg/image1.jpeg',
-        'static/user_data/Jpeg/image2.jpeg',
-        'static/user_data/Jpeg/image3.jpeg',
-        ];
         const container = document.createElement( 'div' );
         document.body.appendChild( container );
         camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
@@ -316,21 +316,13 @@
         dirLight.shadow.camera.bottom = - 100;
         dirLight.shadow.camera.left = - 120;
         dirLight.shadow.camera.right = 120;
-        // scene.add( dirLight );
-
-        // scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
-
-        // ground
         const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
         mesh.rotation.x = - Math.PI / 2;
         mesh.receiveShadow = true;
-        // scene.add( mesh );
-
         const grid = new THREE.GridHelper( 200, 20, 0x000000, 0x000000 );
         grid.material.opacity = 0.2;
         grid.material.transparent = true;
         scene.add( grid );
-
         const tex_loader = new THREE.CubeTextureLoader();
         const texture = tex_loader.load([
             '/static/resources/posx.jpg',
@@ -347,15 +339,12 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
         renderer.shadowMap.enabled = true;
         container.appendChild( renderer.domElement );
-
         const controls = new OrbitControls( camera, renderer.domElement );
         controls.target.set( 0, 100, 0 );
         controls.update();
-
         window.addEventListener( 'resize', onWindowResize );
         document.addEventListener('keydown', handleKeyDown);
         Getanimation(AnimTable,anim)
-        
         get_txt()
     }
     function onWindowResize() {
@@ -363,6 +352,33 @@
         camera.updateProjectionMatrix();
         renderer.setSize( window.innerWidth, window.innerHeight );
     }
+    function dimAndDisableButtons() {
+        // Get the #button-container element
+        const buttonContainer = document.getElementById("button-container");
+
+        // Apply CSS styles to dim and disable buttons
+        buttonContainer.style.opacity = "0.5"; // Dim the container
+        buttonContainer.style.pointerEvents = "none"; // Make it unclickable
+
+        const buttons = buttonContainer.querySelectorAll("button");
+        buttons.forEach((button) => {
+            button.disabled = true; // Disable individual buttons
+        });
+    }
+    function undimAndEnableButtons() {
+        // Get the #button-container element
+        const buttonContainer = document.getElementById("button-container");
+
+        // Reset CSS styles to their default values
+        buttonContainer.style.opacity = "1"; // Restore full opacity
+        buttonContainer.style.pointerEvents = "auto"; // Re-enable clicking
+
+        const buttons = buttonContainer.querySelectorAll("button");
+        buttons.forEach((button) => {
+            button.disabled = false; // Re-enable individual buttons
+        });
+    }
+
     function getOneModel(path,loader)
     {
         console.log(path)
@@ -614,7 +630,10 @@
         isButtonActive = true;
         // Show ring2
         ring2.style.opacity = "1";
-        let pictureList=captureScreenshots(2,30,renderer);
+        const circle = document.getElementById("record_trigger");
+        circle.style.animationPlayState = 'running';        
+        dimAndDisableButtons()
+        let pictureList=captureScreenshots(5,30,renderer);
         console.log(pictureList)
         
     });
@@ -632,9 +651,12 @@
                 switch (this.status){
                     case 200:
                         write_to_gif_list(file.name)
-                        // ModelTable.push(file.name);
-                        // const loader = new FBXLoader();
-                        // getOneModel(file.name,loader)
+                        const ring2 = document.getElementById("trigger_ring2");
+                        undimAndEnableButtons()
+                        const circle = document.getElementById("record_trigger");
+                        circle.style.animationPlayState = 'paused';
+                        circle.style.backgroundColor = 'seashell';
+                        ring2.style.opacity="0"
                         break;
                     
                     default:
@@ -753,7 +775,7 @@
             workerScript: '/static/gif/gif.js.optimized-master/main/gif.worker.js', // Specify the correct path
         });
         let framesAdded = 0; // Track the number of frames added
-        console.log("in gif", imageArray);
+        console.log("in gif", imageArray, interval);
 
         imageArray.forEach((imageDataUrl) => {
             try {
