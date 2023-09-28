@@ -772,46 +772,63 @@
             console.error("Error:", error);
         });
     }
-    function createGif(imageArray, interval) {
-        const gif = new GIF({
-            workers: 2,
-            quality: 10,
-            workerScript: '/static/gif/gif.js.optimized-master/main/gif.worker.js', // Specify the correct path
-        });
-        let framesAdded = 0; // Track the number of frames added
-        console.log("in gif", imageArray, interval);
+    function createGif(imageArray, interval,fps=30) {
+        const ring2 = document.getElementById("trigger_ring2");
+        undimAndEnableButtons()
+        const circle = document.getElementById("record_trigger");
+        circle.classList.remove('animate');
+        ring2.style.opacity="0"
+        let fileName=(ModelList[currentModelIndex].name+"@"+AnimTable[currentAnimIndex])
+        sendImagesToServer(imageArray,fileName,fps)
+    }
+    function sendImagesToServer(base64ImageArray, gifName,fps) {
+        // Create a FormData object to send the images
+        const formData = new FormData();
 
-        imageArray.forEach((imageDataUrl) => {
-            try {
-                // Create a new Image object and set its source to the data URL
-                const img = new Image();
-                img.src = imageDataUrl;
+        // Iterate through the array of base64-encoded image data
+        base64ImageArray.forEach((base64ImageData, index) => {
+            // Convert the base64 data URI to binary image data
+            const binaryImageData = atob(base64ImageData.split(',')[1]);
 
-                img.onload = () => {
-                    gif.addFrame(img, { delay: interval });
-                    framesAdded++;
-
-                    if (framesAdded === imageArray.length) {
-                        gif.render();
-                        gif.on('finished', (blob) => {
-                            console.log("GIF rendering finished.");
-                            try {
-                                let newName=ModelList[currentModelIndex].name.replace(".fbx","")
-                                let newAnimName=AnimTable[currentAnimIndex].replace(".fbx","")
-                                newName=newName+"@"+newAnimName +".gif"
-                                const file = new File([blob],newName, { type: "image/gif" });
-                                uploadGif(file);
-                            } catch (err) {
-                                console.error("Error converting GIF to Blob:", err);
-                            }
-                        });
-                    }
-                };
-            } catch (err) {
-                console.error("Error processing image:", err);
+            // Create a Uint8Array from the binary image data
+            const uint8Array = new Uint8Array(binaryImageData.length);
+            for (let i = 0; i < binaryImageData.length; i++) {
+                uint8Array[i] = binaryImageData.charCodeAt(i);
             }
+
+            // Create a Blob from the Uint8Array (optional, if needed)
+            const blob = new Blob([uint8Array], { type: 'image/jpeg' });
+
+            // Append each image Blob to the FormData with a unique name
+            formData.append(`image_${index}`, blob, `screenshot_${index}.jpg`);
+        });
+
+        // Append the GIF name as a field in the FormData
+        formData.append('gifName', gifName);
+        formData.append('fps', fps);
+        
+        // Make a POST request to the Flask server
+        fetch('/upload_Gif', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text(); // You can handle the response from the server here
+            } else {
+                throw new Error('Failed to upload images');
+            }
+        })
+        .then(data => {
+            // Handle the response data from the server (if needed)
+            console.log(data);
+        })
+        .catch(error => {
+            console.error(error);
         });
     }
+
+
 
     function captureScreenshots(durationInSeconds, framesPerSecond, renderer) {
         return new Promise((resolve, reject) => {
@@ -834,7 +851,6 @@
 
                 // Capture the screenshot as a data URL (assuming renderer is defined)
                 const screenshotDataUrl = renderer.domElement.toDataURL("image/jpeg");
-
                 screenshots.push(screenshotDataUrl);
 
                 frameCount++;
