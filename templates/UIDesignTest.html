@@ -1,114 +1,159 @@
 {% block content %}
 <style>
-	@font-face {
-		font-family: 'Amun Celestial';
-		src: url('/static/resources/font/amun_celestial.ttf') format('truetype');
-		font-weight: normal;
-		font-style: normal;
-	}
-	body {
-		background-color: #222;
-		color: #fff;
-		font-weight: 400;
-		font-size: 5vw;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		text-align: center;
-		text-transform: uppercase;
-		font-family: "Amun Celestial", sans-serif; /* Use the custom font here */
-		height: 100vh;
-		box-sizing: border-box;
-		letter-spacing: 6px;
-		margin: 0;
-		line-height: 1.2;
-	}
+:root {
+  --g1: rgb(0, 234, 222);
+  --g2: rgb(255, 255, 255);
+}
 
-	span {
-		display: inline-block;
-	}
+@keyframes background-pan {
+  from {
+    background-position: 0% center;
+  }
+  
+  to {
+    background-position: -200% center;
+  }
+}
 
-	.square {
-		background-color: #f00;
-		width: 50px;
-		height: 50px;
-		margin: 10px;
-	}
+body {
+  animation: background-pan 10s linear infinite;
+
+  background: linear-gradient(
+    to right,
+    var(--g1),
+    var(--g2),
+    var(--g1)
+  );
+  background-size: 200%;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0px;
+}
+
+body.toggled {
+  animation: none;
+}
+
+body.toggled > #title {
+  opacity: 0;
+}
+
+body.toggled > #icon {
+  opacity: 1;
+}
+
+body.toggled > #tiles > .tile:hover {
+  opacity: 0.1 !important;
+}
+
+.centered {
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#tiles {
+  height: calc(100vh - 1px);
+  width: calc(100vw - 1px);
+  position: relative;
+  z-index: 2;
+  
+  display: grid;
+  grid-template-columns: repeat(var(--columns), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+}
+
+.tile {
+  cursor: pointer;
+  position: relative;
+}
+
+.tile:hover:before {
+  background-color: rgb(30, 30, 30);
+}
+
+.tile:before {
+  background-color: rgb(15, 15, 15);
+  content: "";
+  inset: 0.5px;
+  position: absolute;
+}
+
+
+
 </style>
-<body>
-	<div>
-		<div class="animate-me">
-		  letterize.js&anime.js
-		</div>
-		<div class="animate-me">
-		  anime.js&letterize.js
-		</div>
-		<div class="animate-me">
-		  letterize.js&anime.js
-		</div>
-		<div class="animate-me">
-		  anime.js&letterize.js
-		</div>
-		<div class="animate-me">
-		  letterize.js&anime.js
-		</div>
-		<div class="animate-me">
-		  anime.js&letterize.js
-		</div>
-		<div class="animate-me">
-		  letterize.js&anime.js
-		</div>
-		<div class="animate-me">
-		  anime.js&letterize.js
-		</div>
-		<div class="animate-me">
-		  letterize.js&anime.js
-		</div>
-		<div class="animate-me">
-		  anime.js&letterize.js
-		</div>
-		<div class="animate-me">
-		  letterize.js&anime.js
-		</div>
-		<div class="animate-me">
-		  anime.js&letterize.js
-		</div>
-		<div class="animate-me">
-		  letterize.js&anime.js
-		</div>
-		<div class="animate-me">
-		  anime.js&letterize.js
-		</div>
-	</div>
-</body>
+<div id="tiles"></div>
+
+<h1 id="title" class="centered">
+
+</h1>
+
+
+
 <script type="module">
 	import Letterize from "https://cdn.skypack.dev/letterizejs@2.0.0";
 	import anime from "/static/animejs/lib/anime.es.js";
-	const test = new Letterize({
-        targets: ".animate-me",
-	});
-	const animation = anime.timeline({
-		targets: test.listAll,
-		delay: anime.stagger(100, {
-			grid: [test.list[0].length, test.list.length],
-			from: "center"
-		}),
-		loop: true
-	});
+	const wrapper = document.getElementById("tiles");
+
+	let columns = 0,
+		rows = 0,
+		toggled = false;
+
+	const toggle = () => {
+	toggled = !toggled;
 	
-	animation
-	.add({
-		scale: 0.5
+	document.body.classList.toggle("toggled");
+	}
+
+	const handleOnClick = index => {
+		toggle();
 		
-	})
-	.add({
-		letterSpacing: "10px"
-	})
-	.add({
-		scale: 1
-	})
-	.add({
-		letterSpacing: "6px"
-	});
+		anime({
+			targets: ".tile",
+			opacity: toggled ? 0 : 1,
+			delay: anime.stagger(10, {
+				grid: [columns, rows],
+				from: index
+			})
+		});
+	}
+
+	const createTile = index => {
+		const tile = document.createElement("div");
+		
+		tile.classList.add("tile");
+		
+		tile.style.opacity = toggled ? 0 : 1;
+		
+		tile.onclick = e => handleOnClick(index);
+		
+		return tile;
+	}
+
+	const createTiles = quantity => {
+		Array.from(Array(quantity)).map((tile, index) => {
+			wrapper.appendChild(createTile(index));
+		});
+	}
+
+	const createGrid = () => {
+		wrapper.innerHTML = "";
+		
+		const size = document.body.clientWidth > 800 ? 100 : 50;
+		
+		columns = Math.floor(document.body.clientWidth / size);
+		rows = Math.floor(document.body.clientHeight / size);
+		
+		wrapper.style.setProperty("--columns", columns);
+		wrapper.style.setProperty("--rows", rows);
+		
+		createTiles(columns * rows);
+	}
+
+	createGrid();
+
+	window.onresize = () => createGrid();
+
 </script>
 {% endblock %}
